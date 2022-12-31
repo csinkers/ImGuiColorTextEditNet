@@ -1,0 +1,15 @@
+.vs/
+.vscode/
+/BenchmarkDotNet.Artifacts
+build/
+packages/
+
+*.lock
+*.lock~
+*.user
+*.DotSettings
+*.code-workspace
+*.gfxr
+launchSettings.json
+imgui.ini
+
