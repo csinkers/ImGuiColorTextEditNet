@@ -14,4 +14,5 @@ public struct Identifier
 
     public Coordinates Location;
     public string Declaration;
+    public override string ToString() => $"{Location} = {Declaration}";
 }

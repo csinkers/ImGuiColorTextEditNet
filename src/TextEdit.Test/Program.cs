@@ -10,12 +10,27 @@ public static class Program
 {
     public static void Main()
     {
-        VeldridStartup.CreateWindowAndGraphicsDevice(
-            new WindowCreateInfo(100, 100, 800, 1024, WindowState.Normal, "TextEdit.Test"),
-            new GraphicsDeviceOptions(true) { SyncToVerticalBlank = true },
-            GraphicsBackend.Direct3D11,
-            out var window,
-            out var gd);
+        var windowInfo = new WindowCreateInfo
+        {
+            X = 100,
+            Y = 100,
+            WindowWidth = 800,
+            WindowHeight = 1024,
+            WindowInitialState = WindowState.Normal,
+            WindowTitle = "TextEdit.Test"
+        };
+
+        var gdOptions = new GraphicsDeviceOptions(
+            true,
+            PixelFormat.R32_Float,
+            true,
+            ResourceBindingModel.Improved,
+            true,
+            true,
+            false);
+
+        var window = VeldridStartup.CreateWindow(ref windowInfo);
+        var gd = VeldridStartup.CreateGraphicsDevice(window, gdOptions, GraphicsBackend.Direct3D11);
 
         var imguiRenderer = new ImGuiRenderer(
             gd,
@@ -31,6 +46,7 @@ public static class Program
         };
 
         var editor = new TextEditor();
+        var buf = new byte[256];
 
         while (window.Exists)
         {
@@ -44,6 +60,7 @@ public static class Program
             ImGui.SetNextWindowSize(new Vector2(window.Width, window.Height));
             ImGui.Begin("Demo");
 
+            ImGui.InputText("Foo", buf, (uint)buf.Length);
             editor.Render("EditWindow");
 
             ImGui.End();

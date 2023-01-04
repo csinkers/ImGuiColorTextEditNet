@@ -4,6 +4,7 @@ struct Glyph
     public char Char;
     public GlyphFlags Flags;
     public PaletteIndex ColorIndex = PaletteIndex.Default;
+    public override string ToString() => $"{Char} {ColorIndex}";
 
     public bool Comment
     {

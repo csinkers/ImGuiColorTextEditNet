@@ -2,6 +2,7 @@
 .vscode/
 /BenchmarkDotNet.Artifacts
 build/
+deps/
 packages/
 
 *.lock

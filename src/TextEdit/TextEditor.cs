@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Numerics;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -7,65 +8,44 @@ namespace ImGuiColorTextEditNet;
 
 public class TextEditor
 {
+    const float _lineSpacing = 1.0f;
+    const int _leftMargin = 10;
+
     readonly List<UndoRecord> _undoBuffer = new();
     readonly List<(Regex, PaletteIndex)> _regexList = new();
     readonly List<List<Glyph>> _lines = new();
-    readonly float _lineSpacing;
-    readonly int _leftMargin;
     readonly uint[] _palette = new uint[(int)PaletteIndex.Max];
+    readonly SimpleCache<int, string> _lineNumberCache = new("line numbers", x => $"{x} ");
+    readonly SimpleCache<char, string> _charLabelCache = new("chars", x => x.ToString());
+    readonly SimpleCache<char, float> _charWidthCache = new("char width", x => ImGui.CalcTextSize(x.ToString()).X);
+    HashSet<int> _breakpoints = new();
+    Dictionary<int, string> _errorMarkers = new();
 
     internal EditorState _state;
     int _undoIndex;
 
-    int _tabSize;
+    int _tabSize = 4;
     bool _overwrite;
     bool _withinRender;
     bool _scrollToCursor;
     bool _scrollToTop;
     bool _textChanged;
-    float _textStart; // position (in pixels) where a code line starts relative to the left of the TextEditor.
+    float _textStart = 20.0f; // position (in pixels) where a code line starts relative to the left of the TextEditor.
     bool _cursorPositionChanged;
     int _colorRangeMin, _colorRangeMax;
-    SelectionMode _selectionMode;
+    SelectionMode _selectionMode = SelectionMode.Normal;
 
     LanguageDefinition _languageDefinition;
 
-    bool _checkComments;
-    HashSet<int> _breakpoints = new();
-    Dictionary<int, string> _errorMarkers = new();
+    bool _checkComments = true;
     Vector2 _charAdvance;
     Coordinates _interactiveStart, _interactiveEnd;
     string _lineBuffer = "";
-    DateTime _startTime;
-
-    float _lastClick;
+    DateTime _startTime = DateTime.UtcNow;
+    float _lastClick = -1.0f;
 
     public TextEditor()
     {
-        _lineSpacing = 1.0f;
-        _undoIndex = 0;
-        _tabSize = 4;
-        _overwrite = false;
-        IsReadOnly = false;
-        _withinRender = false;
-        _scrollToCursor = false;
-        _scrollToTop = false;
-        _textChanged = false;
-        IsColorizerEnabled = true;
-        _textStart = 20.0f;
-        _leftMargin = 10;
-        _cursorPositionChanged = false;
-        _colorRangeMin = 0;
-        _colorRangeMax = 0;
-        _selectionMode = SelectionMode.Normal;
-        _checkComments = true;
-        _lastClick = -1.0f;
-        IsHandleMouseInputsEnabled = true;
-        IsHandleKeyboardInputsEnabled = true;
-        IsImGuiChildIgnored = false;
-        IsShowingWhitespaces = true;
-        _startTime = DateTime.UtcNow;
-        Palette = DarkPalette;
         LanguageDefinition = LanguageDefinition.HLSL();
         _lines.Add(new List<Glyph>());
     }
@@ -85,7 +65,7 @@ public class TextEditor
         }
     }
 
-    public uint[] Palette { get; set; } = new uint[(int)PaletteIndex.Max];
+    public uint[] Palette { get; set; } = DarkPalette;
     public void SetErrorMarkers(Dictionary<int, string> value) => _errorMarkers = value;
     public void SetBreakpoints(HashSet<int> value) => _breakpoints = value;
 
@@ -219,7 +199,7 @@ public class TextEditor
     public bool IsReadOnly { get; set; }
     public bool IsTextChanged => _textChanged;
     public bool IsCursorPositionChanged => _cursorPositionChanged;
-    public bool IsColorizerEnabled { get; set; }
+    public bool IsColorizerEnabled { get; set; } = true;
     public Coordinates CursorPosition
     {
         get => GetActualCursorCoordinates();
@@ -234,10 +214,10 @@ public class TextEditor
         }
     }
 
-    public bool IsHandleMouseInputsEnabled { get; set; }
-    public bool IsHandleKeyboardInputsEnabled { get; set; }
+    public bool IsHandleMouseInputsEnabled { get; set; } = true;
+    public bool IsHandleKeyboardInputsEnabled { get; set; } = true;
     public bool IsImGuiChildIgnored { get; set; }
-    public bool IsShowingWhitespaces { get; set; }
+    public bool IsShowingWhitespaces { get; set; } = true;
     public int TabSize
     {
         get => _tabSize;
@@ -373,18 +353,6 @@ public class TextEditor
         }
     }
 
-    // https://en.wikipedia.org/wiki/UTF-8
-    // We assume that the char is a standalone character (<128) or a leading byte of an UTF-8 code sequence (non-10xxxxxx code)
-    static int UTF8CharLength(char c)
-    {
-        if ((c & 0xFE) == 0xFC) return 6;
-        if ((c & 0xFC) == 0xF8) return 5;
-        if ((c & 0xF8) == 0xF0) return 4;
-        if ((c & 0xF0) == 0xE0) return 3;
-        if ((c & 0xE0) == 0xC0) return 2;
-        return 1;
-    }
-
     static bool IsUTFSequence(char c) => (c & 0xC0) == 0x80;
 
     public void MoveLeft(int aAmount = 1, bool aSelect = false, bool aWordMode = false)
@@ -478,7 +446,7 @@ public class TextEditor
             }
             else
             {
-                cindex += UTF8CharLength(line[cindex].Char);
+                cindex++;
                 _state.CursorPosition = new Coordinates(lindex, GetCharacterColumn(lindex, cindex));
                 if (aWordMode)
                     _state.CursorPosition = FindNextWord(_state.CursorPosition);
@@ -709,10 +677,7 @@ public class TextEditor
                 u.RemovedStart = u.RemovedEnd = GetActualCursorCoordinates();
                 u.RemovedEnd.Column++;
                 u.Removed = GetText(u.RemovedStart, u.RemovedEnd);
-
-                var d = UTF8CharLength(line[cindex].Char);
-                while (d-- > 0 && cindex < line.Count)
-                    line.RemoveAt(cindex);
+                line.RemoveAt(cindex);
             }
 
             _textChanged = true;
@@ -751,7 +716,7 @@ public class TextEditor
             0xff9bc64d, // Known identifier
             0xffc040a0, // Preproc identifier
             0xff206020, // Comment (single line)
-            0xff406020, // Comment (_Ulti line)
+            0xff406020, // Comment (multi line)
             0xff101010, // Background
             0xffe0e0e0, // Cursor
             0x80a06020, // Selection
@@ -775,7 +740,7 @@ public class TextEditor
             0xff606010, // Known identifier
             0xffc040a0, // Preproc identifier
             0xff205020, // Comment (single line)
-            0xff405020, // Comment (_Ulti line)
+            0xff405020, // Comment (multi line)
             0xffffffff, // Background
             0xff000000, // Cursor
             0x80600000, // Selection
@@ -799,7 +764,7 @@ public class TextEditor
             0xffffffff, // Known identifier
             0xffff00ff, // Preproc identifier
             0xff808080, // Comment (single line)
-            0xff404040, // Comment (_Ulti line)
+            0xff404040, // Comment (multi line)
             0xff800000, // Background
             0xff0080ff, // Cursor
             0x80ffff00, // Selection
@@ -1080,24 +1045,20 @@ public class TextEditor
     {
         var line = _lines[aFrom.Line];
         float distance = 0.0f;
-        float spaceSize = ImGui.CalcTextSize(" ", false, -1.0f).X; // remaining
+        float spaceSize = _charWidthCache.Get(' '); // remaining
 
         int colIndex = GetCharacterIndex(aFrom);
-        for (int it = 0; it < line.Count && it < colIndex;)
+        for (int i = 0; i < line.Count && i < colIndex;)
         {
-            if (line[it].Char == '\t')
+            if (line[i].Char == '\t')
             {
                 distance = (1.0f + MathF.Floor((1.0f + distance) / (_tabSize * spaceSize))) * (_tabSize * spaceSize);
-                ++it;
+                ++i;
             }
             else
             {
-                var d = UTF8CharLength(line[it].Char);
-                var sb = new StringBuilder(7);
-                for (int i = 0; i < 6 && d-- > 0 && it < line.Count; i++, it++)
-                    sb.Append(line[it].Char);
-
-                distance += ImGui.CalcTextSize(sb.ToString(), false, -1.0f).X;
+                distance += _charWidthCache.Get(line[i].Char);
+                i++;
             }
         }
 
@@ -1212,8 +1173,7 @@ public class TextEditor
 
             if (cindex + 1 < line.Count)
             {
-                var delta = UTF8CharLength(line[cindex].Char);
-                cindex = Math.Min(cindex + delta, line.Count - 1);
+                cindex = Math.Min(cindex + 1, line.Count - 1);
             }
             else
             {
@@ -1300,12 +1260,8 @@ public class TextEditor
             else
             {
                 var line = _lines[aWhere.Line];
-                var d = UTF8CharLength(c);
-                while (d-- > 0 && index < aValue.Length)
-                {
-                    line.Insert(cindex++, new Glyph(aValue[index], PaletteIndex.Default));
-                    index++;
-                }
+                line.Insert(cindex++, new Glyph(aValue[index], PaletteIndex.Default));
+                index++;
 
                 ++aWhere.Column;
             }
@@ -1319,12 +1275,11 @@ public class TextEditor
     void AddUndo(UndoRecord aValue)
     {
         Util.Assert(!IsReadOnly);
-        // printf("AddUndo: (@%d.%d) +\'%s' [%d.%d .. %d.%d], -\'%s', [%d.%d .. %d.%d] (@%d.%d)\n",
-        //     aValue._before._cursorPosition._line, aValue._before._cursorPosition._column,
-        //     aValue._added, aValue._addedStart._line, aValue._addedStart._column, aValue._addedEnd._line, aValue._addedEnd._column,
-        //     aValue._removed, aValue._removedStart._line, aValue._removedStart._column, aValue._removedEnd._line, aValue._removedEnd._column,
-        //     aValue._after._cursorPosition._line, aValue._after._cursorPosition._column
-        // );
+        Debug.WriteLine("AddUndo: (@{0}.{1}) +\'{2}' [{3}.{4} .. {5}.{6}], -\'{7}', [{8}.{9} .. {10}.{11}] (@{12}.{13})\n",
+            aValue.Before.CursorPosition.Line, aValue.Before.CursorPosition.Column,
+            aValue.Added, aValue.AddedStart.Line, aValue.AddedStart.Column, aValue.AddedEnd.Line, aValue.AddedEnd.Column,
+            aValue.Removed, aValue.RemovedStart.Line, aValue.RemovedStart.Column, aValue.RemovedEnd.Line, aValue.RemovedEnd.Column,
+            aValue.After.CursorPosition.Line, aValue.After.CursorPosition.Column);
 
         _undoBuffer.Add(aValue);
         ++_undoIndex;
@@ -1351,7 +1306,7 @@ public class TextEditor
 
                 if (line[columnIndex].Char == '\t')
                 {
-                    float spaceSize = ImGui.CalcTextSize(" ", false, -1.0f).X;
+                    float spaceSize = _charWidthCache.Get(' ');
                     float oldX = columnX;
                     float newColumnX = (1.0f + MathF.Floor((1.0f + columnX) / (_tabSize * spaceSize))) * (_tabSize * spaceSize);
                     columnWidth = newColumnX - oldX;
@@ -1364,12 +1319,7 @@ public class TextEditor
                 }
                 else
                 {
-                    var sb = new StringBuilder(7);
-                    var d = UTF8CharLength(line[columnIndex].Char);
-                    while (sb.Length < 6 && d-- > 0)
-                        sb.Append(line[columnIndex++].Char);
-
-                    columnWidth = ImGui.CalcTextSize(sb.ToString(), -1.0f).X;
+                    columnWidth = _charWidthCache.Get(line[columnIndex++].Char);
                     if (_textStart + columnX + columnWidth * 0.5f > local.X)
                         break;
 
@@ -1433,7 +1383,6 @@ public class TextEditor
         while (cindex < line.Count)
         {
             var c = line[cindex].Char;
-            var d = UTF8CharLength(c);
             if (cstart != line[cindex].ColorIndex)
                 break;
 
@@ -1444,7 +1393,7 @@ public class TextEditor
                         ++cindex;
                 break;
             }
-            cindex += d;
+            cindex++;
         }
         return new Coordinates(aFrom.Line, GetCharacterColumn(aFrom.Line, cindex));
     }
@@ -1503,17 +1452,20 @@ public class TextEditor
     {
         if (aCoordinates.Line >= _lines.Count)
             return -1;
+
         var line = _lines[aCoordinates.Line];
         int c = 0;
         int i = 0;
+
         for (; i < line.Count && c < aCoordinates.Column;)
         {
             if (line[i].Char == '\t')
                 c = (c / _tabSize) * _tabSize + _tabSize;
             else
                 ++c;
-            i += UTF8CharLength(line[i].Char);
+            i++;
         }
+
         return i;
     }
 
@@ -1521,18 +1473,21 @@ public class TextEditor
     {
         if (aLine >= _lines.Count)
             return 0;
+
         var line = _lines[aLine];
         int col = 0;
         int i = 0;
+
         while (i < aIndex && i < line.Count)
         {
             var c = line[i].Char;
-            i += UTF8CharLength(c);
+            i++;
             if (c == '\t')
                 col = (col / _tabSize) * _tabSize + _tabSize;
             else
                 col++;
         }
+
         return col;
     }
 
@@ -1540,11 +1495,8 @@ public class TextEditor
     {
         if (aLine >= _lines.Count)
             return 0;
-        var line = _lines[aLine];
-        int c = 0;
-        for (int i = 0; i < line.Count; c++)
-            i += UTF8CharLength(line[i].Char);
-        return c;
+
+        return _lines[aLine].Count;
     }
 
     int GetLineMaxColumn(int aLine)
@@ -1560,7 +1512,7 @@ public class TextEditor
                 col = (col / _tabSize) * _tabSize + _tabSize;
             else
                 col++;
-            i += UTF8CharLength(c);
+            i++;
         }
         return col;
     }
@@ -1665,7 +1617,7 @@ public class TextEditor
         return result;
     }
 
-    void EnterCharacter(ushort aChar, bool aShift)
+    void EnterCharacter(char aChar, bool aShift)
     {
         Util.Assert(!IsReadOnly);
 
@@ -1698,7 +1650,7 @@ public class TextEditor
                 u.RemovedEnd = end;
                 u.Removed = GetText(start, end);
 
-                bool _Odified = false;
+                bool modified = false;
 
                 for (int i = start.Line; i <= end.Line; i++)
                 {
@@ -1710,14 +1662,14 @@ public class TextEditor
                             if (line[0].Char == '\t')
                             {
                                 line.RemoveAt(0);
-                                _Odified = true;
+                                modified = true;
                             }
                             else
                             {
                                 for (int j = 0; j < _tabSize && line.Count != 0 && line[0].Char == ' '; j++)
                                 {
                                     line.RemoveAt(0);
-                                    _Odified = true;
+                                    modified = true;
                                 }
                             }
                         }
@@ -1725,11 +1677,11 @@ public class TextEditor
                     else
                     {
                         line.Insert(0, new Glyph('\t', PaletteIndex.Background));
-                        _Odified = true;
+                        modified = true;
                     }
                 }
 
-                if (_Odified)
+                if (modified)
                 {
                     start = new Coordinates(start.Line, GetCharacterColumn(start.Line, 0));
                     Coordinates rangeEnd;
@@ -1794,45 +1746,22 @@ public class TextEditor
         }
         else
         {
-            var buf = new char[7];
-            int e = ImTextCharToUtf8(buf, 7, aChar);
-            if (e > 0)
+            var line = _lines[coord.Line];
+            var cindex = GetCharacterIndex(coord);
+
+            if (_overwrite && cindex < line.Count)
             {
-                buf[e] = '\0';
-                var line = _lines[coord.Line];
-                var cindex = GetCharacterIndex(coord);
+                u.RemovedStart = _state.CursorPosition;
+                u.RemovedEnd = new Coordinates(coord.Line, GetCharacterColumn(coord.Line, cindex + 1));
 
-                if (_overwrite && cindex < line.Count)
-                {
-                    var d = UTF8CharLength(line[cindex].Char);
-
-                    u.RemovedStart = _state.CursorPosition;
-                    u.RemovedEnd = new Coordinates(coord.Line, GetCharacterColumn(coord.Line, cindex + d));
-
-                    while (d-- > 0 && cindex < line.Count)
-                    {
-                        u.Removed += line[cindex].Char;
-                        line.RemoveAt(cindex);
-                    }
-                }
-
-                var sb = new StringBuilder();
-                for (var i = 0; i < buf.Length; i++, ++cindex)
-                {
-                    var c = buf[i];
-                    if (c == '\0')
-                        break;
-
-                    line.Insert(cindex, new Glyph(c, PaletteIndex.Default));
-                    sb.Append(c);
-                }
-
-                u.Added = sb.ToString();
-
-                CursorPosition = new Coordinates(coord.Line, GetCharacterColumn(coord.Line, cindex));
+                u.Removed += line[cindex].Char;
+                line.RemoveAt(cindex);
             }
-            else
-                return;
+
+            line.Insert(cindex, new Glyph(aChar, PaletteIndex.Default));
+            u.Added = _charLabelCache.Get(aChar);
+
+            CursorPosition = new Coordinates(coord.Line, GetCharacterColumn(coord.Line, cindex + 1));
         }
 
         _textChanged = true;
@@ -2053,8 +1982,8 @@ public class TextEditor
                 for (int i = 0; i < io.InputQueueCharacters.Size; i++)
                 {
                     var c = io.InputQueueCharacters[i];
-                    if (c != 0 && (c == '\n' || c >= 32))
-                        EnterCharacter(c, shift);
+                    if (c != 0 && c is '\n' or >= 32)
+                        EnterCharacter((char)c, shift);
                 }
 
                 // io.InputQueueCharacters.resize(0); // TODO: Revisit
@@ -2080,7 +2009,7 @@ public class TextEditor
         var t = ImGui.GetTime();
         var tripleClick = click && !doubleClick && (_lastClick != -1.0f && (t - _lastClick) < io.MouseDoubleClickTime);
 
-        /* Left _Ouse button triple click */
+        /* Left mouse button triple click */
         if (tripleClick)
         {
             if (!ctrl)
@@ -2093,7 +2022,7 @@ public class TextEditor
             _lastClick = -1.0f;
         }
 
-        /* Left _Ouse button double click */
+        /* Left mouse button double click */
         else if (doubleClick)
         {
             if (!ctrl)
@@ -2109,7 +2038,7 @@ public class TextEditor
             _lastClick = (float)ImGui.GetTime();
         }
 
-        /* Left _Ouse button click */
+        /* Left mouse button click */
         else if (click)
         {
             _state.CursorPosition = _interactiveStart = _interactiveEnd = ScreenPosToCoordinates(ImGui.GetMousePos());
@@ -2132,8 +2061,8 @@ public class TextEditor
 
     void Render()
     {
-        /* Compute _charAdvance regarding to scaled font size (Ctrl + _Ouse wheel)*/
-        float fontSize = ImGui.CalcTextSize("#", false, -1.0f).X;
+        /* Compute _charAdvance regarding to scaled font size (Ctrl + mouse wheel)*/
+        float fontSize = _charWidthCache.Get('#');
         _charAdvance = new Vector2(fontSize, ImGui.GetTextLineHeightWithSpacing() * _lineSpacing);
 
         /* Update palette with the current alpha from style */
@@ -2165,17 +2094,16 @@ public class TextEditor
         var lineMax = Math.Max(0, Math.Min(_lines.Count - 1, lineNo + (int)MathF.Floor((scrollY + contentSize.Y) / _charAdvance.Y)));
 
         // Deduce _textStart by evaluating _lines size (global lineMax) plus two spaces as text width
-        var buf = $" {globalLineMax} ";
-        _textStart = ImGui.CalcTextSize(buf, false, -1.0f).X + _leftMargin;
+        float spaceSize = _charWidthCache.Get(' ');
+        var buf = _lineNumberCache.Get(globalLineMax);
+        _textStart = ImGui.CalcTextSize(buf).X + _leftMargin + spaceSize;
 
         if (_lines.Count != 0)
         {
-            float spaceSize = ImGui.CalcTextSize(" ", false, -1.0f).X;
-
             while (lineNo <= lineMax)
             {
-                Vector2 lineStartScreenPos = new Vector2(cursorScreenPos.X, cursorScreenPos.Y + lineNo * _charAdvance.Y);
-                Vector2 textScreenPos = new Vector2(lineStartScreenPos.X + _textStart, lineStartScreenPos.Y);
+                Vector2 lineStartScreenPos = cursorScreenPos with { Y = cursorScreenPos.Y + lineNo * _charAdvance.Y };
+                Vector2 textScreenPos = lineStartScreenPos with { X = lineStartScreenPos.X + _textStart };
 
                 var line = _lines[lineNo];
                 longest = Math.Max(_textStart + TextDistanceToLineStart(new Coordinates(lineNo, GetLineMaxColumn(lineNo))), longest);
@@ -2198,24 +2126,30 @@ public class TextEditor
 
                 if (sstart != -1 && ssend != -1 && sstart < ssend)
                 {
-                    Vector2 vstart = new(lineStartScreenPos.X + _textStart + sstart, lineStartScreenPos.Y);
+                    Vector2 vstart = lineStartScreenPos with { X = lineStartScreenPos.X + _textStart + sstart };
                     Vector2 vend = new(lineStartScreenPos.X + _textStart + ssend, lineStartScreenPos.Y + _charAdvance.Y);
                     drawList.AddRectFilled(vstart, vend, _palette[(int)PaletteIndex.Selection]);
                 }
 
                 // Draw breakpoints
-                var start = new Vector2(lineStartScreenPos.X + scrollX, lineStartScreenPos.Y);
+                var start = lineStartScreenPos with { X = lineStartScreenPos.X + scrollX };
 
                 if (_breakpoints.Contains(lineNo + 1))
                 {
-                    var end = new Vector2(lineStartScreenPos.X + contentSize.X + 2.0f * scrollX, lineStartScreenPos.Y + _charAdvance.Y);
+                    var end = new Vector2(
+                        lineStartScreenPos.X + contentSize.X + 2.0f * scrollX,
+                        lineStartScreenPos.Y + _charAdvance.Y);
+
                     drawList.AddRectFilled(start, end, _palette[(int)PaletteIndex.Breakpoint]);
                 }
 
-                // Draw error _Arkers
+                // Draw error markers
                 if (_errorMarkers.TryGetValue(lineNo + 1, out var error))
                 {
-                    var end = new Vector2(lineStartScreenPos.X + contentSize.X + 2.0f * scrollX, lineStartScreenPos.Y + _charAdvance.Y);
+                    var end = new Vector2(
+                        lineStartScreenPos.X + contentSize.X + 2.0f * scrollX,
+                        lineStartScreenPos.Y + _charAdvance.Y);
+
                     drawList.AddRectFilled(start, end, _palette[(int)PaletteIndex.ErrorMarker]);
 
                     if (ImGui.IsMouseHoveringRect(lineStartScreenPos, end))
@@ -2233,10 +2167,13 @@ public class TextEditor
                 }
 
                 // Draw line number (right aligned)
-                buf = $"{lineNo + 1}  ";
+                buf = _lineNumberCache.Get(lineNo + 1);
 
-                var lineNoWidth = ImGui.CalcTextSize(buf, false, -1.0f).X;
-                drawList.AddText(new Vector2(lineStartScreenPos.X + _textStart - lineNoWidth, lineStartScreenPos.Y), _palette[(int)PaletteIndex.LineNumber], buf);
+                var lineNoWidth = ImGui.CalcTextSize(buf).X;
+                drawList.AddText(
+                    lineStartScreenPos with { X = lineStartScreenPos.X + _textStart - lineNoWidth },
+                    _palette[(int)PaletteIndex.LineNumber],
+                    buf);
 
                 if (_state.CursorPosition.Line == lineNo)
                 {
@@ -2246,7 +2183,11 @@ public class TextEditor
                     if (!HasSelection())
                     {
                         var end = new Vector2(start.X + contentSize.X + scrollX, start.Y + _charAdvance.Y);
-                        drawList.AddRectFilled(start, end, _palette[(int)(focused ? PaletteIndex.CurrentLineFill : PaletteIndex.CurrentLineFillInactive)]);
+                        drawList.AddRectFilled(
+                            start,
+                            end,
+                            _palette[(int)(focused ? PaletteIndex.CurrentLineFill : PaletteIndex.CurrentLineFillInactive)]);
+
                         drawList.AddRect(start, end, _palette[(int)PaletteIndex.CurrentLineEdge], 1.0f);
                     }
 
@@ -2271,11 +2212,10 @@ public class TextEditor
                                 }
                                 else
                                 {
-                                    var buf2 = line[cindex].Char.ToString();
-                                    width = ImGui.CalcTextSize(buf2, false, -1.0f).X;
+                                    width = _charWidthCache.Get(line[cindex].Char);
                                 }
                             }
-                            Vector2 cstart = new(textScreenPos.X + cx, lineStartScreenPos.Y);
+                            Vector2 cstart = lineStartScreenPos with { X = textScreenPos.X + cx };
                             Vector2 cend = new(textScreenPos.X + cx + width, lineStartScreenPos.Y + _charAdvance.Y);
                             drawList.AddRectFilled(cstart, cend, _palette[(int)PaletteIndex.Cursor]);
                             if (elapsed.Milliseconds > 800)
@@ -2297,7 +2237,7 @@ public class TextEditor
                     {
                         Vector2 newOffset = new(textScreenPos.X + bufferOffset.X, textScreenPos.Y + bufferOffset.Y);
                         drawList.AddText(newOffset, prevColor, _lineBuffer);
-                        var textSize = ImGui.CalcTextSize(_lineBuffer, false, -1.0f);
+                        var textSize = ImGui.CalcTextSize(_lineBuffer);
                         bufferOffset.X += textSize.X;
                         _lineBuffer = "";
                     }
@@ -2338,10 +2278,9 @@ public class TextEditor
                     }
                     else
                     {
-                        var l = UTF8CharLength(glyph.Char);
-                        while (l-- > 0)
-                            _lineBuffer += line[i++].Char;
+                        _lineBuffer += line[i++].Char;
                     }
+
                     ++columnNo;
                 }
 
@@ -2380,51 +2319,13 @@ public class TextEditor
             }
         }
 
-        ImGui.Dummy(new Vector2((longest + 2), _lines.Count * _charAdvance.Y));
+        ImGui.Dummy(new Vector2(longest + 2, _lines.Count * _charAdvance.Y));
 
         if (_scrollToCursor)
         {
             EnsureCursorVisible();
             ImGui.SetWindowFocus();
             _scrollToCursor = false;
-        }
-    }
-
-    // "Borrowed" from ImGui source
-    static int ImTextCharToUtf8(Span<char> buf, int buf_size, uint c)
-    {
-        if (c < 0x80)
-        {
-            buf[0] = (char)c;
-            return 1;
-        }
-        if (c < 0x800)
-        {
-            if (buf_size < 2) return 0;
-            buf[0] = (char)(0xc0 + (c >> 6));
-            buf[1] = (char)(0x80 + (c & 0x3f));
-            return 2;
-        }
-        if (c is >= 0xdc00 and < 0xe000)
-        {
-            return 0;
-        }
-        if (c is >= 0xd800 and < 0xdc00)
-        {
-            if (buf_size < 4) return 0;
-            buf[0] = (char)(0xf0 + (c >> 18));
-            buf[1] = (char)(0x80 + ((c >> 12) & 0x3f));
-            buf[2] = (char)(0x80 + ((c >> 6) & 0x3f));
-            buf[3] = (char)(0x80 + ((c) & 0x3f));
-            return 4;
-        }
-        //else if (c < 0x10000)
-        {
-            if (buf_size < 3) return 0;
-            buf[0] = (char)(0xe0 + (c >> 12));
-            buf[1] = (char)(0x80 + ((c >> 6) & 0x3f));
-            buf[2] = (char)(0x80 + ((c) & 0x3f));
-            return 3;
         }
     }
 }

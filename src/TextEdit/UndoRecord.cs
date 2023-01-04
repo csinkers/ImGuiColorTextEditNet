@@ -1,3 +1,5 @@
+using System.Text;
+
 namespace ImGuiColorTextEditNet;
 
 class UndoRecord
@@ -12,6 +14,35 @@ class UndoRecord
 
     public EditorState Before;
     public EditorState After;
+
+    public override string ToString()
+    {
+        var sb = new StringBuilder();
+        if (Added != null)
+        {
+            sb.Append("+\"");
+            sb.Append(Added);
+            sb.Append("\" @ ");
+            sb.Append(AddedStart);
+        }
+
+        if (Removed != null)
+        {
+            if (sb.Length > 0)
+                sb.Append(' ');
+            sb.Append("-\"");
+            sb.Append(Removed);
+            sb.Append("\" @ ");
+            sb.Append(RemovedStart);
+        }
+
+        sb.Append(' ');
+        sb.Append(Before);
+        sb.Append(" => ");
+        sb.Append(After);
+
+        return sb.ToString();
+    }
 
     public UndoRecord() { }
     public UndoRecord(

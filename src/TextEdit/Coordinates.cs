@@ -21,6 +21,7 @@ public struct Coordinates : IEquatable<Coordinates>
         Column = aColumn;
     }
 
+    public override string ToString() => $"{Line}:{Column}";
     public static Coordinates Invalid => new(-1, -1);
     public static bool operator ==(Coordinates x, Coordinates y) => x.Line == y.Line && x.Column == y.Column;
     public static bool operator !=(Coordinates x, Coordinates y) => x.Line != y.Line || x.Column != y.Column; 
