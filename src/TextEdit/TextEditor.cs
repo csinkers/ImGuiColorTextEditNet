@@ -1252,18 +1252,19 @@ public class TextEditor
                     InsertLine(aWhere.Line + 1);
                 }
 
-                ++aWhere.Line;
+                aWhere.Line++;
                 aWhere.Column = 0;
                 cindex = 0;
-                ++totalLines;
+                totalLines++;
             }
             else
             {
                 var line = _lines[aWhere.Line];
-                line.Insert(cindex++, new Glyph(aValue[index], PaletteIndex.Default));
-                index++;
+                var glyph = new Glyph(aValue[index], PaletteIndex.Default);
+                line.Insert(cindex, glyph);
 
-                ++aWhere.Column;
+                cindex++;
+                aWhere.Column++;
             }
 
             _textChanged = true;
