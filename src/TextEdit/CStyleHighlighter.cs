@@ -41,8 +41,7 @@ public class CStyleHighlighter : ISyntaxHighlighter
         for (int i = 0; i < line.Length;)
         {
             int result = Tokenize(line[i..], ref state);
-            if (result == 0)
-                result = "".Length;
+            Util.Assert(result != 0);
 
             if (result == -1)
             {

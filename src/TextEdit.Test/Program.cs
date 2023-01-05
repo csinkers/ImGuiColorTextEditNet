@@ -14,8 +14,8 @@ public static class Program
         {
             X = 100,
             Y = 100,
-            WindowWidth = 800,
-            WindowHeight = 1024,
+            WindowWidth = 480,
+            WindowHeight = 640,
             WindowInitialState = WindowState.Normal,
             WindowTitle = "TextEdit.Test"
         };
