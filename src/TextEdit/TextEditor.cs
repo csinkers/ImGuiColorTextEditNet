@@ -2003,7 +2003,7 @@ public class TextEditor
                 if (id.Length != 0)
                 {
                     var tooltip = _syntaxHighlighter.GetTooltip(id);
-                    if (tooltip != null)
+                    if (!string.IsNullOrEmpty(tooltip))
                     {
                         ImGui.BeginTooltip();
                         ImGui.TextUnformatted(tooltip);
