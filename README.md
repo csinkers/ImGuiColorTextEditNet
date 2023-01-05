@@ -1,6 +1,6 @@
 # ImGuiColorTextEditNet
 C# port of [syntax highlighting text editor for ImGui](https://github.com/BalazsJako/ImGuiColorTextEdit)
-![Screenshot](https://github.com/CSinkers/ImGuiColorTextEditNet/.github/screenshot.png "Screenshot")
+![Screenshot](/.github/screenshot.png?raw=true)
 
 # C# Specific notes:
  - The way the syntax highlighting works has been changed
