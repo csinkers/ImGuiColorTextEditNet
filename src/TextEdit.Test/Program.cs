@@ -45,22 +45,46 @@ public static class Program
             imguiRenderer.WindowResized(window.Width, window.Height);
         };
 
-        var editor = new TextEditor();
-        var buf = new byte[256];
+        var editor = new TextEditor(new CStyleHighlighter(true))
+        {
+            Text = @"#include <stdio.h>
 
+void main(int argc, char **argv) {
+	printf(""Hello world!\n"");
+	/* A multi-line
+	comment which continues on
+	to here */
+
+	for (int i = 0; i < 10; i++)
+		printf(""%d\n"", i); // Breakpoint here
+
+	// A single line comment
+	int a = 123456;
+	int b = 0x123456; // and here
+	int c = 0b110101;
+    errors on this line!
+}
+"
+        };
+
+        editor.SetBreakpoints(new HashSet<int> { 10, 14 });
+        editor.SetErrorMarkers(new Dictionary<int, string> { { 16, "Syntax error etc" } });
+
+        DateTime lastFrame = DateTime.Now;
         while (window.Exists)
         {
             var input = window.PumpEvents();
             if (!window.Exists)
                 break;
 
-            imguiRenderer.Update(1f / 60f, input);
+            var thisFrame = DateTime.Now;
+            imguiRenderer.Update((float)(thisFrame - lastFrame).TotalSeconds, input);
+            lastFrame=thisFrame;
 
             ImGui.SetNextWindowPos(new Vector2(0, 0));
             ImGui.SetNextWindowSize(new Vector2(window.Width, window.Height));
             ImGui.Begin("Demo");
 
-            ImGui.InputText("Foo", buf, (uint)buf.Length);
             editor.Render("EditWindow");
 
             ImGui.End();

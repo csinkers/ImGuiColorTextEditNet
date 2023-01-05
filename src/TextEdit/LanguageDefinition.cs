@@ -2,86 +2,18 @@ namespace ImGuiColorTextEditNet;
 
 public class LanguageDefinition
 {
-    public delegate ReadOnlySpan<char> TokenizeCallback(ReadOnlySpan<char> input, ref PaletteIndex paletteIndex);
-
     public string Name;
-    public HashSet<string> Keywords = new();
-    public Dictionary<string, Identifier> Identifiers = new();
-    public Dictionary<string, Identifier> PreprocIdentifiers = new();
-    public List<(string, PaletteIndex)> TokenRegexStrings = new();
-    public TokenizeCallback? Tokenize;
+    public string[] Keywords;
+    public string[] Identifiers;
     public string CommentStart = "/*";
     public string CommentEnd = "*/";
     public string SingleLineComment = "//";
     public char PreprocChar = '#';
     public bool AutoIndentation = true;
     public bool CaseSensitive = true;
+    public List<(string, PaletteIndex)> TokenRegexStrings = new();
 
     public LanguageDefinition(string name) => Name = name;
-
-#if false
-    public static LanguageDefinition CPlusPlus()
-    {
-        LanguageDefinition langDef = new()
-        {
-            Keywords = new[] {
-                "alignas", "alignof", "and", "and_eq", "asm", "atomic_cancel", "atomic_commit", "atomic_noexcept", "auto", "bitand", "bitor", "bool", "break", "case", "catch", "char", "char16_t", "char32_t", "class",
-                "compl", "concept", "const", "constexpr", "const_cast", "continue", "decltype", "default", "delete", "do", "double", "dynamic_cast", "else", "enum", "explicit", "export", "extern", "false", "float",
-                "for", "friend", "goto", "if", "import", "inline", "int", "long", "module", "mutable", "namespace", "new", "noexcept", "not", "not_eq", "nullptr", "operator", "or", "or_eq", "private", "protected", "public",
-                "register", "reinterpret_cast", "requires", "return", "short", "signed", "sizeof", "static", "static_assert", "static_cast", "struct", "switch", "synchronized", "template", "this", "thread_local",
-                "throw", "true", "try", "typedef", "typeid", "typename", "union", "unsigned", "using", "virtual", "void", "volatile", "wchar_t", "while", "xor", "xor_eq"
-            }.ToHashSet(),
-            Identifiers = new[] {
-                "abort", "abs", "acos", "asin", "atan", "atexit", "atof", "atoi", "atol", "ceil", "clock", "cosh", "ctime",
-                "div", "exit", "fabs", "floor", "fmod", "getchar", "getenv", "isalnum", "isalpha", "isdigit", "isgraph",
-                "ispunct", "isspace", "isupper", "kbhit", "log10", "log2", "log", "memcmp", "modf", "pow", "printf",
-                "sprintf", "snprintf", "putchar", "putenv", "puts", "rand", "remove", "rename", "sinh", "sqrt", "srand",
-                "strcat", "strcmp", "strerror", "time", "tolower", "toupper",
-                "std", "string", "vector", "map", "unordered_map", "set", "unordered_set", "min", "max"
-            }.ToDictionary(x => x, x => new Identifier("Built-in function"))
-        };
-
-        ReadOnlySpan<char> Tokenize(Span<char> input, out PaletteIndex token)
-        {
-            token = PaletteIndex.Max;
-
-            while (in_begin < in_end && isascii(*in_begin) && isblank(*in_begin))
-                in_begin++;
-
-            if (in_begin == in_end)
-            {
-                out_begin = in_end;
-                out_end = in_end;
-                token = PaletteIndex.Default;
-            }
-            else if (TokenizeCStyleString(in_begin, in_end, out_begin, out_end))
-                token = PaletteIndex.String;
-            else if (TokenizeCStyleCharacterLiteral(in_begin, in_end, out_begin, out_end))
-                token = PaletteIndex.CharLiteral;
-            else if (TokenizeCStyleIdentifier(in_begin, in_end, out_begin, out_end))
-                token = PaletteIndex.Identifier;
-            else if (TokenizeCStyleNumber(in_begin, in_end, out_begin, out_end))
-                token = PaletteIndex.Number;
-            else if (TokenizeCStylePunctuation(in_begin, in_end, out_begin, out_end))
-                token = PaletteIndex.Punctuation;
-
-            return token != PaletteIndex.Max;
-        }
-
-        langDef.Tokenize = Tokenize;
-
-        langDef.CommentStart = "/*";
-        langDef.CommentEnd = "*/";
-        langDef.SingleLineComment = "//";
-
-        langDef.CaseSensitive = true;
-        langDef.AutoIndentation = true;
-
-        langDef.Name = "C++";
-
-        return langDef;
-    }
-#endif
 
     public static LanguageDefinition HLSL()
     {
@@ -103,7 +35,7 @@ public class LanguageDefinition
                 "float1x3","float2x3","float3x3","float4x3","float1x4","float2x4","float3x4","float4x4",
                 "half1x1","half2x1","half3x1","half4x1","half1x2","half2x2","half3x2","half4x2",
                 "half1x3","half2x3","half3x3","half4x3","half1x4","half2x4","half3x4","half4x4",
-            }.ToHashSet(),
+            },
             Identifiers = new[]
             {
                 "abort", "abs", "acos", "all", "AllMemoryBarrier", "AllMemoryBarrierWithGroupSync", "any", "asdouble", "asfloat",
@@ -124,18 +56,18 @@ public class LanguageDefinition
                 "tex1D", "tex1Dbias", "tex1Dgrad", "tex1Dlod", "tex1Dproj", "tex2D", "tex2Dbias", "tex2Dgrad",
                 "tex2Dlod", "tex2Dproj", "tex3D", "tex3Dbias", "tex3Dgrad", "tex3Dlod", "tex3Dproj", "texCUBE",
                 "texCUBEbias", "texCUBEgrad", "texCUBElod", "texCUBEproj", "transpose", "trunc"
-            }.ToDictionary(x => x, x => new Identifier("Built-in function"))
+            }
         };
 
-        langDef.TokenRegexStrings.Add(("[ \\t]*#[ \\t]*[a-zA-Z_]+", PaletteIndex.Preprocessor));
-        langDef.TokenRegexStrings.Add(("L?\\\"(\\\\.|[^\\\"])*\\\"", PaletteIndex.String));
-        langDef.TokenRegexStrings.Add(("\\'\\\\?[^\\']\\'", PaletteIndex.CharLiteral));
+        langDef.TokenRegexStrings.Add((@"[ \t]*#[ \t]*[a-zA-Z_]+", PaletteIndex.Preprocessor));
+        langDef.TokenRegexStrings.Add((@"L?\""(\\.|[^\""])*\""", PaletteIndex.String));
+        langDef.TokenRegexStrings.Add((@"\'\\?[^\']\'", PaletteIndex.CharLiteral));
         langDef.TokenRegexStrings.Add(("[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][+-]?[0-9]+)?[fF]?", PaletteIndex.Number));
         langDef.TokenRegexStrings.Add(("[+-]?[0-9]+[Uu]?[lL]?[lL]?", PaletteIndex.Number));
         langDef.TokenRegexStrings.Add(("0[0-7]+[Uu]?[lL]?[lL]?", PaletteIndex.Number));
         langDef.TokenRegexStrings.Add(("0[xX][0-9a-fA-F]+[uU]?[lL]?[lL]?", PaletteIndex.Number));
         langDef.TokenRegexStrings.Add(("[a-zA-Z_][a-zA-Z0-9_]*", PaletteIndex.Identifier));
-        langDef.TokenRegexStrings.Add(("[\\[\\]\\{\\}\\!\\%\\^\\&\\*\\(\\)\\-\\+\\=\\~\\|\\<\\>\\?\\/\\;\\,\\.]", PaletteIndex.Punctuation));
+        langDef.TokenRegexStrings.Add((@"[\[\]\{\}\!\%\^\&\*\(\)\-\+\=\~\|\<\>\?\/\;\,\.]", PaletteIndex.Punctuation));
         return langDef;
     }
 
@@ -147,72 +79,25 @@ public class LanguageDefinition
                 "auto", "break", "case", "char", "const", "continue", "default", "do", "double", "else", "enum", "extern", "float", "for", "goto", "if", "inline", "int", "long", "register", "restrict", "return", "short",
                 "signed", "sizeof", "static", "struct", "switch", "typedef", "union", "unsigned", "void", "volatile", "while", "_Alignas", "_Alignof", "_Atomic", "_Bool", "_Complex", "_Generic", "_Imaginary",
                 "_Noreturn", "_Static_assert", "_Thread_local"
-            }.ToHashSet(),
+            },
             Identifiers = new[]{
                 "abort", "abs", "acos", "asin", "atan", "atexit", "atof", "atoi", "atol", "ceil", "clock", "cosh", "ctime", "div", "exit", "fabs", "floor", "fmod", "getchar", "getenv", "isalnum", "isalpha", "isdigit", "isgraph",
                 "ispunct", "isspace", "isupper", "kbhit", "log10", "log2", "log", "memcmp", "modf", "pow", "putchar", "putenv", "puts", "rand", "remove", "rename", "sinh", "sqrt", "srand", "strcat", "strcmp", "strerror", "time", "tolower", "toupper"
-            }.ToDictionary(x => x, x => new Identifier("Built-in function")),
+            }
         };
 
-        langDef.TokenRegexStrings.Add(("[ \\t]*#[ \\t]*[a-zA-Z_]+", PaletteIndex.Preprocessor));
-        langDef.TokenRegexStrings.Add(("L?\\\"(\\\\.|[^\\\"])*\\\"", PaletteIndex.String));
-        langDef.TokenRegexStrings.Add(("\\'\\\\?[^\\']\\'", PaletteIndex.CharLiteral));
+        langDef.TokenRegexStrings.Add((@"[ \t]*#[ \t]*[a-zA-Z_]+", PaletteIndex.Preprocessor));
+        langDef.TokenRegexStrings.Add((@"L?\""(\\.|[^\""])*\""", PaletteIndex.String));
+        langDef.TokenRegexStrings.Add((@"\'\\?[^\']\'", PaletteIndex.CharLiteral));
         langDef.TokenRegexStrings.Add(("[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][+-]?[0-9]+)?[fF]?", PaletteIndex.Number));
         langDef.TokenRegexStrings.Add(("[+-]?[0-9]+[Uu]?[lL]?[lL]?", PaletteIndex.Number));
         langDef.TokenRegexStrings.Add(("0[0-7]+[Uu]?[lL]?[lL]?", PaletteIndex.Number));
         langDef.TokenRegexStrings.Add(("0[xX][0-9a-fA-F]+[uU]?[lL]?[lL]?", PaletteIndex.Number));
         langDef.TokenRegexStrings.Add(("[a-zA-Z_][a-zA-Z0-9_]*", PaletteIndex.Identifier));
-        langDef.TokenRegexStrings.Add(("[\\[\\]\\{\\}\\!\\%\\^\\&\\*\\(\\)\\-\\+\\=\\~\\|\\<\\>\\?\\/\\;\\,\\.]", PaletteIndex.Punctuation));
+        langDef.TokenRegexStrings.Add((@"[\[\]\{\}\!\%\^\&\*\(\)\-\+\=\~\|\<\>\?\/\;\,\.]", PaletteIndex.Punctuation));
 
         return langDef;
     }
-
-#if false
-    public static LanguageDefinition C()
-    {
-        LanguageDefinition langDef = new("C")
-        {
-            Keywords = new[]{
-                "auto", "break", "case", "char", "const", "continue", "default", "do", "double", "else", "enum", "extern", "float", "for", "goto", "if", "inline", "int", "long", "register", "restrict", "return", "short",
-                "signed", "sizeof", "static", "struct", "switch", "typedef", "union", "unsigned", "void", "volatile", "while", "_Alignas", "_Alignof", "_Atomic", "_Bool", "_Complex", "_Generic", "_Imaginary",
-                "_Noreturn", "_Static_assert", "_Thread_local"
-            }.ToHashSet(),
-            Identifiers = new[]{
-                "abort", "abs", "acos", "asin", "atan", "atexit", "atof", "atoi", "atol", "ceil", "clock", "cosh", "ctime", "div", "exit", "fabs", "floor", "fmod", "getchar", "getenv", "isalnum", "isalpha", "isdigit", "isgraph",
-                "ispunct", "isspace", "isupper", "kbhit", "log10", "log2", "log", "memcmp", "modf", "pow", "putchar", "putenv", "puts", "rand", "remove", "rename", "sinh", "sqrt", "srand", "strcat", "strcmp", "strerror", "time", "tolower", "toupper"
-            }.ToDictionary(x => x, x => new Identifier("Built-in function"))
-        };
-
-        langDef.Tokenize = [](char * in_begin, char * in_end, char * &out_begin, char * &out_end, PaletteIndex & paletteIndex)=> bool
-            {
-            paletteIndex = PaletteIndex.Max;
-
-            while (in_begin < in_end && isascii(*in_begin) && isblank(*in_begin))
-                in_begin++;
-
-            if (in_begin == in_end)
-            {
-                out_begin = in_end;
-                out_end = in_end;
-                paletteIndex = PaletteIndex.Default;
-            }
-            else if (TokenizeCStyleString(in_begin, in_end, out_begin, out_end))
-                paletteIndex = PaletteIndex.String;
-            else if (TokenizeCStyleCharacterLiteral(in_begin, in_end, out_begin, out_end))
-                paletteIndex = PaletteIndex.CharLiteral;
-            else if (TokenizeCStyleIdentifier(in_begin, in_end, out_begin, out_end))
-                paletteIndex = PaletteIndex.Identifier;
-            else if (TokenizeCStyleNumber(in_begin, in_end, out_begin, out_end))
-                paletteIndex = PaletteIndex.Number;
-            else if (TokenizeCStylePunctuation(in_begin, in_end, out_begin, out_end))
-                paletteIndex = PaletteIndex.Punctuation;
-
-            return paletteIndex != PaletteIndex.Max;
-        };
-
-        return langDef;
-    }
-#endif
 
     public static LanguageDefinition SQL()
     {
@@ -231,7 +116,7 @@ public class LanguageDefinition
                 "DBCC", "NONCLUSTERED", "TRIGGER", "DEALLOCATE", "NOT", "TRUNCATE", "DECLARE", "NULL", "TSEQUAL", "DEFAULT", "NULLIF", "UNION", "DELETE", "OF", "UNIQUE", "DENY", "OFF", "UPDATE",
                 "DESC", "OFFSETS", "UPDATETEXT", "DISK", "ON", "USE", "DISTINCT", "OPEN", "USER", "DISTRIBUTED", "OPENDATASOURCE", "VALUES", "DOUBLE", "OPENQUERY", "VARYING","DROP", "OPENROWSET", "VIEW",
                 "DUMMY", "OPENXML", "WAITFOR", "DUMP", "OPTION", "WHEN", "ELSE", "OR", "WHERE", "END", "ORDER", "WHILE", "ERRLVL", "OUTER", "WITH", "ESCAPE", "OVER", "WRITETEXT"
-            }.ToHashSet(),
+            },
             Identifiers = new[]{
                 "ABS",  "ACOS",  "ADD_MONTHS",  "ASCII",  "ASCIISTR",  "ASIN",  "ATAN",  "ATAN2",  "AVG",  "BFILENAME",  "BIN_TO_NUM",  "BITAND",  "CARDINALITY",  "CASE",  "CAST",  "CEIL",
                 "CHARTOROWID",  "CHR",  "COALESCE",  "COMPOSE",  "CONCAT",  "CONVERT",  "CORR",  "COS",  "COSH",  "COUNT",  "COVAR_POP",  "COVAR_SAMP",  "CUME_DIST",  "CURRENT_DATE",
@@ -243,45 +128,17 @@ public class LanguageDefinition
                 "SOUNDEX",  "SQRT",  "STDDEV",  "SUBSTR",  "SUM",  "SYS_CONTEXT",  "SYSDATE",  "SYSTIMESTAMP",  "TAN",  "TANH",  "TO_CHAR",  "TO_CLOB",  "TO_DATE",  "TO_DSINTERVAL",  "TO_LOB",
                 "TO_MULTI_BYTE",  "TO_NCLOB",  "TO_NUMBER",  "TO_SINGLE_BYTE",  "TO_TIMESTAMP",  "TO_TIMESTAMP_TZ",  "TO_YMINTERVAL",  "TRANSLATE",  "TRIM",  "TRUNC", "TZ_OFFSET",  "UID",  "UPPER",
                 "USER",  "USERENV",  "VAR_POP",  "VAR_SAMP",  "VARIANCE",  "VSIZE "
-            }.ToDictionary(x => x, x => new Identifier("Built-in function"))
+            }
         };
 
-        langDef.TokenRegexStrings.Add(("L?\\\"(\\\\.|[^\\\"])*\\\"", PaletteIndex.String));
-        langDef.TokenRegexStrings.Add(("\\\'[^\\\']*\\\'", PaletteIndex.String));
+        langDef.TokenRegexStrings.Add((@"L?\""(\\.|[^\""])*\""", PaletteIndex.String));
+        langDef.TokenRegexStrings.Add((@"\'[^\']*\'", PaletteIndex.String));
         langDef.TokenRegexStrings.Add(("[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][+-]?[0-9]+)?[fF]?", PaletteIndex.Number));
         langDef.TokenRegexStrings.Add(("[+-]?[0-9]+[Uu]?[lL]?[lL]?", PaletteIndex.Number));
         langDef.TokenRegexStrings.Add(("0[0-7]+[Uu]?[lL]?[lL]?", PaletteIndex.Number));
         langDef.TokenRegexStrings.Add(("0[xX][0-9a-fA-F]+[uU]?[lL]?[lL]?", PaletteIndex.Number));
         langDef.TokenRegexStrings.Add(("[a-zA-Z_][a-zA-Z0-9_]*", PaletteIndex.Identifier));
-        langDef.TokenRegexStrings.Add(("[\\[\\]\\{\\}\\!\\%\\^\\&\\*\\(\\)\\-\\+\\=\\~\\|\\<\\>\\?\\/\\;\\,\\.]", PaletteIndex.Punctuation));
-
-        return langDef;
-    }
-
-    public static LanguageDefinition AngelScript()
-    {
-        LanguageDefinition langDef = new("AngelScript")
-        {
-            Keywords = new[]{
-                "and", "abstract", "auto", "bool", "break", "case", "cast", "class", "const", "continue", "default", "do", "double", "else", "enum", "false", "final", "float", "for",
-                "from", "funcdef", "function", "get", "if", "import", "in", "inout", "int", "interface", "int8", "int16", "int32", "int64", "is", "mixin", "namespace", "not",
-                "null", "or", "out", "override", "private", "protected", "return", "set", "shared", "super", "switch", "this ", "true", "typedef", "uint", "uint8", "uint16", "uint32",
-                "uint64", "void", "while", "xor"
-            }.ToHashSet(),
-            Identifiers = new[]{
-                "cos", "sin", "tab", "acos", "asin", "atan", "atan2", "cosh", "sinh", "tanh", "log", "log10", "pow", "sqrt", "abs", "ceil", "floor", "fraction", "closeTo", "fpFromIEEE", "fpToIEEE",
-                "complex", "opEquals", "opAddAssign", "opSubAssign", "opMulAssign", "opDivAssign", "opAdd", "opSub", "opMul", "opDiv"
-            }.ToDictionary(x => x, x => new Identifier("Built-in function"))
-        };
-
-        langDef.TokenRegexStrings.Add(("L?\\\"(\\\\.|[^\\\"])*\\\"", PaletteIndex.String));
-        langDef.TokenRegexStrings.Add(("\\'\\\\?[^\\']\\'", PaletteIndex.String));
-        langDef.TokenRegexStrings.Add(("[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][+-]?[0-9]+)?[fF]?", PaletteIndex.Number));
-        langDef.TokenRegexStrings.Add(("[+-]?[0-9]+[Uu]?[lL]?[lL]?", PaletteIndex.Number));
-        langDef.TokenRegexStrings.Add(("0[0-7]+[Uu]?[lL]?[lL]?", PaletteIndex.Number));
-        langDef.TokenRegexStrings.Add(("0[xX][0-9a-fA-F]+[uU]?[lL]?[lL]?", PaletteIndex.Number));
-        langDef.TokenRegexStrings.Add(("[a-zA-Z_][a-zA-Z0-9_]*", PaletteIndex.Identifier));
-        langDef.TokenRegexStrings.Add(("[\\[\\]\\{\\}\\!\\%\\^\\&\\*\\(\\)\\-\\+\\=\\~\\|\\<\\>\\?\\/\\;\\,\\.]", PaletteIndex.Punctuation));
+        langDef.TokenRegexStrings.Add((@"[\[\]\{\}\!\%\^\&\*\(\)\-\+\=\~\|\<\>\?\/\;\,\.]", PaletteIndex.Punctuation));
 
         return langDef;
     }
@@ -297,7 +154,7 @@ public class LanguageDefinition
             AutoIndentation = false,
             Keywords = new[]{
                 "and", "break", "do", "", "else", "elseif", "end", "false", "for", "function", "if", "in", "", "local", "nil", "not", "or", "repeat", "return", "then", "true", "until", "while"
-            }.ToHashSet(),
+            },
             Identifiers = new[]{
                 "assert", "collectgarbage", "dofile", "error", "getmetatable", "ipairs", "loadfile", "load", "loadstring",  "next",  "pairs",  "pcall",  "print",  "rawequal",  "rawlen",  "rawget",  "rawset",
                 "select",  "setmetatable",  "tonumber",  "tostring",  "type",  "xpcall",  "_G",  "_VERSION","arshift", "band", "bnot", "bor", "bxor", "btest", "extract", "lrotate", "lshift", "replace",
@@ -309,230 +166,17 @@ public class LanguageDefinition
                 "date", "difftime", "execute", "exit", "getenv", "remove", "rename", "setlocale", "time", "tmpname", "byte", "char", "dump", "find", "format", "gmatch", "gsub", "len", "lower", "match", "rep",
                 "reverse", "sub", "upper", "pack", "packsize", "unpack", "concat", "maxn", "insert", "pack", "unpack", "remove", "move", "sort", "offset", "codepoint", "char", "len", "codes", "charpattern",
                 "coroutine", "table", "io", "os", "string", "utf8", "bit32", "math", "debug", "package"
-            }.ToDictionary(x => x, x => new Identifier("Built-in function"))
+            }
         };
 
-        langDef.TokenRegexStrings.Add(("L?\\\"(\\\\.|[^\\\"])*\\\"", PaletteIndex.String));
-        langDef.TokenRegexStrings.Add(("\\\'[^\\\']*\\\'", PaletteIndex.String));
+        langDef.TokenRegexStrings.Add((@"L?\""(\\.|[^\""])*\""", PaletteIndex.String));
+        langDef.TokenRegexStrings.Add((@"\'[^\']*\'", PaletteIndex.String));
         langDef.TokenRegexStrings.Add(("0[xX][0-9a-fA-F]+[uU]?[lL]?[lL]?", PaletteIndex.Number));
         langDef.TokenRegexStrings.Add(("[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][+-]?[0-9]+)?[fF]?", PaletteIndex.Number));
         langDef.TokenRegexStrings.Add(("[+-]?[0-9]+[Uu]?[lL]?[lL]?", PaletteIndex.Number));
         langDef.TokenRegexStrings.Add(("[a-zA-Z_][a-zA-Z0-9_]*", PaletteIndex.Identifier));
-        langDef.TokenRegexStrings.Add(("[\\[\\]\\{\\}\\!\\%\\^\\&\\*\\(\\)\\-\\+\\=\\~\\|\\<\\>\\?\\/\\;\\,\\.]", PaletteIndex.Punctuation));
+        langDef.TokenRegexStrings.Add((@"[\[\]\{\}\!\%\^\&\*\(\)\-\+\=\~\|\<\>\?\/\;\,\.]", PaletteIndex.Punctuation));
 
         return langDef;
     }
-    /*
-    static ReadOnlySpan<char> TokenizeCStyleString(ReadOnlySpan<char> input)
-    {
-        int i = 0;
-        if (input[i] != '"')
-            return null;
-
-        i++;
-
-        while (i < input.Length)
-        {
-            // handle end of string
-            if (input[i] == '"')
-                return input[..(i + 1)];
-
-            // handle escape character for "
-            if (input[i] == '\\' && i + 1 < input.Length && input[i + 1] == '"')
-                i++;
-
-            i++;
-        }
-
-        return null;
-    }
-
-    static bool TokenizeCStyleCharacterLiteral(char* in_begin, char* in_end, char*& out_begin, char*& out_end)
-    {
-        char* p = in_begin;
-
-        if (*p == '\'')
-        {
-            p++;
-
-            // handle escape characters
-            if (p < in_end && *p == '\\')
-                p++;
-
-            if (p < in_end)
-                p++;
-
-            // handle end of character literal
-            if (p < in_end && *p == '\'')
-            {
-                out_begin = in_begin;
-                out_end = p + 1;
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    static bool TokenizeCStyleIdentifier(char* in_begin, char* in_end, char*& out_begin, char*& out_end)
-    {
-        char* p = in_begin;
-
-        if ((*p >= 'a' && *p <= 'z') || (*p >= 'A' && *p <= 'Z') || *p == '_')
-        {
-            p++;
-
-            while ((p < in_end) && ((*p >= 'a' && *p <= 'z') || (*p >= 'A' && *p <= 'Z') || (*p >= '0' && *p <= '9') || *p == '_'))
-                p++;
-
-            out_begin = in_begin;
-            out_end = p;
-            return true;
-        }
-
-        return false;
-    }
-
-    static bool TokenizeCStyleNumber(char* in_begin, char* in_end, char*& out_begin, char*& out_end)
-    {
-        char* p = in_begin;
-
-        bool startsWithNumber = *p >= '0' && *p <= '9';
-
-        if (*p != '+' && *p != '-' && !startsWithNumber)
-            return false;
-
-        p++;
-
-        bool hasNumber = startsWithNumber;
-
-        while (p < in_end && (*p >= '0' && *p <= '9'))
-        {
-            hasNumber = true;
-
-            p++;
-        }
-
-        if (hasNumber == false)
-            return false;
-
-        bool isFloat = false;
-        bool isHex = false;
-        bool isBinary = false;
-
-        if (p < in_end)
-        {
-            if (*p == '.')
-            {
-                isFloat = true;
-
-                p++;
-
-                while (p < in_end && (*p >= '0' && *p <= '9'))
-                    p++;
-            }
-            else if (*p == 'x' || *p == 'X')
-            {
-                // hex formatted integer of the type 0xef80
-
-                isHex = true;
-
-                p++;
-
-                while (p < in_end && ((*p >= '0' && *p <= '9') || (*p >= 'a' && *p <= 'f') || (*p >= 'A' && *p <= 'F')))
-                    p++;
-            }
-            else if (*p == 'b' || *p == 'B')
-            {
-                // binary formatted integer of the type 0b01011101
-
-                isBinary = true;
-
-                p++;
-
-                while (p < in_end && (*p >= '0' && *p <= '1'))
-                    p++;
-            }
-        }
-
-        if (isHex == false && isBinary == false)
-        {
-            // floating point exponent
-            if (p < in_end && (*p == 'e' || *p == 'E'))
-            {
-                isFloat = true;
-
-                p++;
-
-                if (p < in_end && (*p == '+' || *p == '-'))
-                    p++;
-
-                bool hasDigits = false;
-
-                while (p < in_end && (*p >= '0' && *p <= '9'))
-                {
-                    hasDigits = true;
-
-                    p++;
-                }
-
-                if (hasDigits == false)
-                    return false;
-            }
-
-            // single precision floating point type
-            if (p < in_end && *p == 'f')
-                p++;
-        }
-
-        if (isFloat == false)
-        {
-            // integer size type
-            while (p < in_end && (*p == 'u' || *p == 'U' || *p == 'l' || *p == 'L'))
-                p++;
-        }
-
-        out_begin = in_begin;
-        out_end = p;
-        return true;
-    }
-
-    static bool TokenizeCStylePunctuation(char* in_begin, char* in_end, char*& out_begin, char*& out_end)
-    {
-        (void)in_end;
-
-        switch (*in_begin)
-        {
-            case '[':
-            case ']':
-            case '{':
-            case '}':
-            case '!':
-            case '%':
-            case '^':
-            case '&':
-            case '*':
-            case '(':
-            case ')':
-            case '-':
-            case '+':
-            case '=':
-            case '~':
-            case '|':
-            case '<':
-            case '>':
-            case '?':
-            case ':':
-            case '/':
-            case ';':
-            case ',':
-            case '.':
-                out_begin = in_begin;
-                out_end = in_begin + 1;
-                return true;
-        }
-
-        return false;
-    }
-    */
 }

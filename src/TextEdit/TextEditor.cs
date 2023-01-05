@@ -1,8 +1,13 @@
 using System.Diagnostics;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using System.Text;
-using System.Text.RegularExpressions;
 using ImGuiNET;
+
+// ReSharper disable MemberCanBePrivate.Global
+// ReSharper disable UnusedMember.Global
+// ReSharper disable AutoPropertyCanBeMadeGetOnly.Global
+// ReSharper disable UnusedAutoPropertyAccessor.Global
 
 namespace ImGuiColorTextEditNet;
 
@@ -11,98 +16,56 @@ public class TextEditor
     const float _lineSpacing = 1.0f;
     const int _leftMargin = 10;
 
+    static (List<Glyph> Glyphs, object? SyntaxState) BlankLine => (new List<Glyph>(), null);
+
     readonly List<UndoRecord> _undoBuffer = new();
-    readonly List<(Regex, PaletteIndex)> _regexList = new();
-    readonly List<List<Glyph>> _lines = new();
+    readonly List<(List<Glyph> Glyphs, object? SyntaxState)> _lines = new();
     readonly uint[] _palette = new uint[(int)PaletteIndex.Max];
     readonly SimpleCache<int, string> _lineNumberCache = new("line numbers", x => $"{x} ");
     readonly SimpleCache<char, string> _charLabelCache = new("chars", x => x.ToString());
     readonly SimpleCache<char, float> _charWidthCache = new("char width", x => ImGui.CalcTextSize(x.ToString()).X);
+    readonly ISyntaxHighlighter _syntaxHighlighter;
+
     HashSet<int> _breakpoints = new();
     Dictionary<int, string> _errorMarkers = new();
-
-    internal EditorState _state;
+    EditorState _state;
     int _undoIndex;
-
     int _tabSize = 4;
     bool _overwrite;
     bool _withinRender;
     bool _scrollToCursor;
     bool _scrollToTop;
-    bool _textChanged;
     float _textStart = 20.0f; // position (in pixels) where a code line starts relative to the left of the TextEditor.
-    bool _cursorPositionChanged;
-    int _colorRangeMin, _colorRangeMax;
+    int _foo;
+    int _colorRangeMin
+    {
+        get => _foo;
+        set
+        {
+            if (value < 0)
+                value = 0;
+            _foo = value;
+        }
+    }
+
+    int _colorRangeMax;
     SelectionMode _selectionMode = SelectionMode.Normal;
-
-    LanguageDefinition _languageDefinition;
-
-    bool _checkComments = true;
     Vector2 _charAdvance;
     Coordinates _interactiveStart, _interactiveEnd;
     string _lineBuffer = "";
     DateTime _startTime = DateTime.UtcNow;
     float _lastClick = -1.0f;
 
-    public TextEditor()
+    public TextEditor() : this(null) { }
+    public TextEditor(ISyntaxHighlighter? syntaxHighlighter)
     {
-        LanguageDefinition = LanguageDefinition.HLSL();
-        _lines.Add(new List<Glyph>());
+        _syntaxHighlighter = syntaxHighlighter ?? NullSyntaxHighlighter.Instance;
+        _lines.Add(BlankLine);
     }
 
-    public LanguageDefinition LanguageDefinition
-    {
-        get => _languageDefinition;
-        set
-        {
-            _languageDefinition = value;
-            _regexList.Clear();
-
-            foreach (var r in _languageDefinition.TokenRegexStrings)
-                _regexList.Add((new Regex(r.Item1, RegexOptions.Compiled), r.Item2));
-
-            Colorize();
-        }
-    }
-
-    public uint[] Palette { get; set; } = DarkPalette;
+    public uint[] Palette { get; set; } = Palettes.Dark;
     public void SetErrorMarkers(Dictionary<int, string> value) => _errorMarkers = value;
     public void SetBreakpoints(HashSet<int> value) => _breakpoints = value;
-
-    public void Render(string aTitle, Vector2 aSize = new(), bool aBorder = false)
-    {
-        _withinRender = true;
-        _textChanged = false;
-        _cursorPositionChanged = false;
-
-        ImGui.PushStyleColor(ImGuiCol.ChildBg, ImGui.ColorConvertU32ToFloat4(_palette[(int)PaletteIndex.Background]));
-        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(0.0f, 0.0f));
-        if (!IsImGuiChildIgnored)
-            ImGui.BeginChild(aTitle, aSize, aBorder, ImGuiWindowFlags.HorizontalScrollbar | ImGuiWindowFlags.AlwaysHorizontalScrollbar | ImGuiWindowFlags.NoMove);
-
-        if (IsHandleMouseInputsEnabled)
-        {
-            HandleKeyboardInputs();
-            ImGui.PushAllowKeyboardFocus(true);
-        }
-
-        if (IsHandleMouseInputsEnabled)
-            HandleMouseInputs();
-
-        ColorizeInternal();
-        Render();
-
-        if (IsHandleMouseInputsEnabled)
-            ImGui.PopAllowKeyboardFocus();
-
-        if (!IsImGuiChildIgnored)
-            ImGui.EndChild();
-
-        ImGui.PopStyleVar();
-        ImGui.PopStyleColor();
-
-        _withinRender = false;
-    }
 
     public string Text
     {
@@ -110,7 +73,7 @@ public class TextEditor
         set
         {
             _lines.Clear();
-            _lines.Add(new List<Glyph>());
+            _lines.Add(BlankLine);
 
             foreach (var chr in value)
             {
@@ -119,20 +82,20 @@ public class TextEditor
                     // ignore the carriage return character
                 }
                 else if (chr == '\n')
-                    _lines.Add(new List<Glyph>());
+                    _lines.Add(BlankLine);
                 else
                 {
-                    _lines[^1].Add(new Glyph(chr, PaletteIndex.Default));
+                    _lines[^1].Glyphs.Add(new Glyph(chr, PaletteIndex.Default));
                 }
             }
 
-            _textChanged = true;
+            IsTextChanged = true;
             _scrollToTop = true;
 
             _undoBuffer.Clear();
             _undoIndex = 0;
 
-            Colorize();
+            InvalidateColor();
         }
     }
 
@@ -142,7 +105,7 @@ public class TextEditor
         {
             var result = new List<string>(_lines.Count);
 
-            foreach (var line in _lines)
+            foreach (var (line, _) in _lines)
             {
                 var sb = new StringBuilder(line.Count);
 
@@ -160,28 +123,29 @@ public class TextEditor
 
             if (value.Count == 0)
             {
-                _lines.Add(new List<Glyph>());
+                _lines.Add(BlankLine);
             }
             else
             {
                 _lines.Capacity = value.Count;
                 foreach (var aLine in value)
                 {
-                    var line = new List<Glyph>(aLine.Length);
+                    var line = BlankLine;
+                    line.Glyphs.Capacity = aLine.Length;
                     _lines.Add(line);
 
                     foreach (var c in aLine)
-                        line.Add(new Glyph(c, PaletteIndex.Default));
+                        line.Glyphs.Add(new Glyph(c, PaletteIndex.Default));
                 }
             }
 
-            _textChanged = true;
+            IsTextChanged = true;
             _scrollToTop = true;
 
             _undoBuffer.Clear();
             _undoIndex = 0;
 
-            Colorize();
+            InvalidateColor();
         }
     }
 
@@ -197,8 +161,8 @@ public class TextEditor
     public int TotalLines => _lines.Count;
     public bool IsOverwrite() => _overwrite;
     public bool IsReadOnly { get; set; }
-    public bool IsTextChanged => _textChanged;
-    public bool IsCursorPositionChanged => _cursorPositionChanged;
+    public bool IsTextChanged { get; private set; }
+    public bool IsCursorPositionChanged { get; private set; }
     public bool IsColorizerEnabled { get; set; } = true;
     public Coordinates CursorPosition
     {
@@ -208,7 +172,7 @@ public class TextEditor
             if (_state.CursorPosition != value)
             {
                 _state.CursorPosition = value;
-                _cursorPositionChanged = true;
+                IsCursorPositionChanged = true;
                 EnsureCursorVisible();
             }
         }
@@ -224,6 +188,47 @@ public class TextEditor
         set => _tabSize = Math.Max(0, Math.Min(32, value));
     }
 
+    public void Render(string title, Vector2 size = new(), bool showBorder = false)
+    {
+        _withinRender = true;
+        IsTextChanged = false;
+        IsCursorPositionChanged = false;
+
+        ImGui.PushStyleColor(ImGuiCol.ChildBg, ImGui.ColorConvertU32ToFloat4(_palette[(int)PaletteIndex.Background]));
+        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(0.0f, 0.0f));
+
+        if (!IsImGuiChildIgnored)
+        {
+            ImGui.BeginChild(title, size, showBorder,
+                ImGuiWindowFlags.HorizontalScrollbar 
+                | ImGuiWindowFlags.AlwaysHorizontalScrollbar 
+                | ImGuiWindowFlags.NoMove);
+        }
+
+        if (IsHandleMouseInputsEnabled)
+        {
+            HandleKeyboardInputs();
+            ImGui.PushAllowKeyboardFocus(true);
+        }
+
+        if (IsHandleMouseInputsEnabled)
+            HandleMouseInputs();
+
+        ColorizeIncremental();
+        Render();
+
+        if (IsHandleMouseInputsEnabled)
+            ImGui.PopAllowKeyboardFocus();
+
+        if (!IsImGuiChildIgnored)
+            ImGui.EndChild();
+
+        ImGui.PopStyleVar();
+        ImGui.PopStyleColor();
+
+        _withinRender = false;
+    }
+
     public void InsertText(string aValue)
     {
         if (string.IsNullOrEmpty(aValue))
@@ -237,7 +242,7 @@ public class TextEditor
 
         SetSelection(pos, pos);
         CursorPosition = pos;
-        Colorize(start.Line - 1, totalLines + 2);
+        InvalidateColor(start.Line - 1, totalLines + 2);
     }
 
     public void SetSelectionStart(Coordinates aPosition)
@@ -278,7 +283,6 @@ public class TextEditor
             case SelectionMode.Line:
                 {
                     var lineNo = _state.SelectionEnd.Line;
-                    var lineSize = lineNo < _lines.Count ? _lines[lineNo].Count : 0;
                     _state.SelectionStart = new Coordinates(_state.SelectionStart.Line, 0);
                     _state.SelectionEnd = new Coordinates(lineNo, GetLineMaxColumn(lineNo));
                     break;
@@ -287,7 +291,7 @@ public class TextEditor
 
         if (_state.SelectionStart != oldSelStart ||
             _state.SelectionEnd != oldSelEnd)
-            _cursorPositionChanged = true;
+            IsCursorPositionChanged = true;
     }
 
     public void SelectWordUnderCursor()
@@ -372,10 +376,7 @@ public class TextEditor
                 if (line > 0)
                 {
                     --line;
-                    if (_lines.Count > line)
-                        cindex = _lines[line].Count;
-                    else
-                        cindex = 0;
+                    cindex = _lines.Count > line ? _lines[line].Glyphs.Count : 0;
                 }
             }
             else
@@ -385,7 +386,7 @@ public class TextEditor
                 {
                     if (_lines.Count > line)
                     {
-                        while (cindex > 0 && IsUTFSequence(_lines[line][cindex].Char))
+                        while (cindex > 0 && IsUTFSequence(_lines[line].Glyphs[cindex].Char))
                             --cindex;
                     }
                 }
@@ -434,7 +435,7 @@ public class TextEditor
             var lindex = _state.CursorPosition.Line;
             var line = _lines[lindex];
 
-            if (cindex >= line.Count)
+            if (cindex >= line.Glyphs.Count)
             {
                 if (_state.CursorPosition.Line < _lines.Count - 1)
                 {
@@ -570,7 +571,7 @@ public class TextEditor
                 StringBuilder sb = new();
                 var line = _lines[GetActualCursorCoordinates().Line];
 
-                foreach (var g in line)
+                foreach (var g in line.Glyphs)
                     sb.Append(g.Char);
 
                 ImGui.SetClipboardText(sb.ToString());
@@ -655,7 +656,7 @@ public class TextEditor
         else
         {
             var pos = GetActualCursorCoordinates();
-            CursorPosition=pos;
+            CursorPosition = pos;
             var line = _lines[pos.Line];
 
             if (pos.Column == GetLineMaxColumn(pos.Line))
@@ -667,8 +668,8 @@ public class TextEditor
                 u.RemovedStart = u.RemovedEnd = GetActualCursorCoordinates();
                 Advance(u.RemovedEnd);
 
-                var nextLine = _lines[pos.Line + 1];
-                line.AddRange(nextLine);
+                var nextLine = _lines[pos.Line + 1].Glyphs;
+                line.Glyphs.AddRange(nextLine);
                 RemoveLine(pos.Line + 1);
             }
             else
@@ -677,12 +678,12 @@ public class TextEditor
                 u.RemovedStart = u.RemovedEnd = GetActualCursorCoordinates();
                 u.RemovedEnd.Column++;
                 u.Removed = GetText(u.RemovedStart, u.RemovedEnd);
-                line.RemoveAt(cindex);
+                line.Glyphs.RemoveAt(cindex);
             }
 
-            _textChanged = true;
+            IsTextChanged = true;
 
-            Colorize(pos.Line, 1);
+            InvalidateColor(pos.Line, 1);
         }
 
         u.After = _state;
@@ -695,349 +696,88 @@ public class TextEditor
     public void Undo(int aSteps = 1)
     {
         while (CanUndo() && aSteps-- > 0)
-            _undoBuffer[--_undoIndex].Undo(this);
+            Undo(_undoBuffer[--_undoIndex]);
+    }
+
+    void Undo(UndoRecord record)
+    {
+        if (!string.IsNullOrEmpty(record.Added))
+        {
+            DeleteRange(record.AddedStart, record.AddedEnd);
+            InvalidateColor(record.AddedStart.Line - 1, record.AddedEnd.Line - record.AddedStart.Line + 2);
+        }
+
+        if (!string.IsNullOrEmpty(record.Removed))
+        {
+            var start = record.RemovedStart;
+            InsertTextAt(start, record.Removed);
+            InvalidateColor(record.RemovedStart.Line - 1, record.RemovedEnd.Line - record.RemovedStart.Line + 2);
+        }
+
+        _state = record.Before;
+        EnsureCursorVisible();
     }
 
     public void Redo(int aSteps = 1)
     {
         while (CanRedo() && aSteps-- > 0)
-            _undoBuffer[_undoIndex++].Redo(this);
+            Redo(_undoBuffer[_undoIndex++]);
     }
 
-    public static readonly uint[] DarkPalette = {
-            0xff7f7f7f, // Default
-            0xffd69c56, // Keyword
-            0xff00ff00, // Number
-            0xff7070e0, // String
-            0xff70a0e0, // Char literal
-            0xffffffff, // Punctuation
-            0xff408080, // Preprocessor
-            0xffaaaaaa, // Identifier
-            0xff9bc64d, // Known identifier
-            0xffc040a0, // Preproc identifier
-            0xff206020, // Comment (single line)
-            0xff406020, // Comment (multi line)
-            0xff101010, // Background
-            0xffe0e0e0, // Cursor
-            0x80a06020, // Selection
-            0x800020ff, // ErrorMarker
-            0x40f08000, // Breakpoint
-            0xff707000, // Line number
-            0x40000000, // Current line fill
-            0x40808080, // Current line fill (inactive)
-            0x40a0a0a0, // Current line edge
-        };
-
-    public static readonly uint[] LightPalette = {
-            0xff7f7f7f, // None
-            0xffff0c06, // Keyword
-            0xff008000, // Number
-            0xff2020a0, // String
-            0xff304070, // Char literal
-            0xff000000, // Punctuation
-            0xff406060, // Preprocessor
-            0xff404040, // Identifier
-            0xff606010, // Known identifier
-            0xffc040a0, // Preproc identifier
-            0xff205020, // Comment (single line)
-            0xff405020, // Comment (multi line)
-            0xffffffff, // Background
-            0xff000000, // Cursor
-            0x80600000, // Selection
-            0xa00010ff, // ErrorMarker
-            0x80f08000, // Breakpoint
-            0xff505000, // Line number
-            0x40000000, // Current line fill
-            0x40808080, // Current line fill (inactive)
-            0x40000000, // Current line edge
-        };
-
-    public static readonly uint[] RetroBluePalette = {
-            0xff00ffff, // None
-            0xffffff00, // Keyword
-            0xff00ff00, // Number
-            0xff808000, // String
-            0xff808000, // Char literal
-            0xffffffff, // Punctuation
-            0xff008000, // Preprocessor
-            0xff00ffff, // Identifier
-            0xffffffff, // Known identifier
-            0xffff00ff, // Preproc identifier
-            0xff808080, // Comment (single line)
-            0xff404040, // Comment (multi line)
-            0xff800000, // Background
-            0xff0080ff, // Cursor
-            0x80ffff00, // Selection
-            0xa00000ff, // ErrorMarker
-            0x80ff8000, // Breakpoint
-            0xff808000, // Line number
-            0x40000000, // Current line fill
-            0x40808080, // Current line fill (inactive)
-            0x40000000, // Current line edge
-        };
-
-    internal void Colorize(int aFromLine = 0, int aLines = -1)
+    void Redo(UndoRecord record)
     {
-        int toLine = aLines == -1 ? _lines.Count : Math.Min(_lines.Count, aFromLine + aLines);
-        _colorRangeMin = Math.Min(_colorRangeMin, aFromLine);
-        _colorRangeMax = Math.Max(_colorRangeMax, toLine);
-        _colorRangeMin = Math.Max(0, _colorRangeMin);
-        _colorRangeMax = Math.Max(_colorRangeMin, _colorRangeMax);
-        _checkComments = true;
-    }
-
-    void ColorizeRange(int aFromLine = 0, int aToLine = 0)
-    {
-        /*
-        if (_lines.Count == 0 || aFromLine >= aToLine)
-            return;
-
-        string buffer;
-        std::cmatch results;
-        string id;
-
-        int endLine = Math.Max(0, Math.Min(_lines.Count, aToLine));
-        for (int i = aFromLine; i < endLine; ++i)
+        if (!string.IsNullOrEmpty(record.Removed))
         {
-            var line = _lines[i];
-
-            if (line.Count == 0)
-                continue;
-
-            buffer.resize(line.Count);
-            for (int j = 0; j < line.Count; ++j)
-            {
-                var col = line[j];
-                buffer[j] = col._char;
-                col._colorIndex = PaletteIndex.Default;
-            }
-
-            char* bufferBegin = buffer.front();
-            char* bufferEnd = bufferBegin + buffer.Count;
-
-            var last = bufferEnd;
-
-            for (var first = bufferBegin; first != last;)
-            {
-                char* token_begin = null;
-                char* token_end = null;
-                PaletteIndex token_color = PaletteIndex.Default;
-
-                bool hasTokenizeResult = false;
-
-                if (_languageDefinition._tokenize != null)
-                {
-                    if (_languageDefinition._tokenize(first, last, token_begin, token_end, token_color))
-                        hasTokenizeResult = true;
-                }
-
-                if (hasTokenizeResult == false)
-                {
-                    // todo : remove
-                    //printf("using regex for %.*s\n", first + 10 < last ? 10 : int(last - first), first);
-
-                    foreach (var p in _regexList)
-                    {
-                        if (std::regex_search(first, last, results, p.first, std::regex_constants::match_continuous))
-                        {
-                            hasTokenizeResult = true;
-
-                            var v = *results.begin();
-                            token_begin = v.first;
-                            token_end = v.Value;
-                            token_color = p.Value;
-                            break;
-                        }
-                    }
-                }
-
-                if (hasTokenizeResult == false)
-                {
-                    first++;
-                }
-                else
-                {
-                    int token_length = token_end - token_begin;
-
-                    if (token_color == PaletteIndex.Identifier)
-                    {
-                        id.assign(token_begin, token_end);
-
-                        // todo : allmost all language definitions use lower case to specify keywords, so shouldn't this use ::tolower ?
-                        if (!_languageDefinition._caseSensitive)
-                            std::transform(id.begin(), id.end(), id.begin(), ::toupper);
-
-                        if (!line[first - bufferBegin]._preprocessor)
-                        {
-                            if (_languageDefinition._keywords.count(id) != 0)
-                                token_color = PaletteIndex.Keyword;
-                            else if (_languageDefinition._identifiers.count(id) != 0)
-                                token_color = PaletteIndex.KnownIdentifier;
-                            else if (_languageDefinition._preprocIdentifiers.count(id) != 0)
-                                token_color = PaletteIndex.PreprocIdentifier;
-                        }
-                        else
-                        {
-                            if (_languageDefinition._preprocIdentifiers.count(id) != 0)
-                                token_color = PaletteIndex.PreprocIdentifier;
-                        }
-                    }
-
-                    for (int j = 0; j < token_length; ++j)
-                        line[(token_begin - bufferBegin) + j]._colorIndex = token_color;
-
-                    first = token_end;
-                }
-            }
+            DeleteRange(record.RemovedStart, record.RemovedEnd);
+            InvalidateColor(record.RemovedStart.Line - 1, record.RemovedEnd.Line - record.RemovedStart.Line + 1);
         }
-        */
+
+        if (!string.IsNullOrEmpty(record.Added))
+        {
+            var start = record.AddedStart;
+            InsertTextAt(start, record.Added);
+            InvalidateColor(record.AddedStart.Line - 1, record.AddedEnd.Line - record.AddedStart.Line + 1);
+        }
+
+        _state = record.After;
+        EnsureCursorVisible();
     }
 
-    void ColorizeInternal()
+    void InvalidateColor(int fromLine = 0, int aLines = -1)
     {
-        if (_lines.Count == 0 || !IsColorizerEnabled)
+        fromLine = Math.Min(_colorRangeMin, fromLine);
+        fromLine = Math.Max(0, fromLine);
+
+        int toLine = aLines == -1 ? _lines.Count : Math.Min(_lines.Count, fromLine + aLines);
+        toLine = Math.Max(_colorRangeMax, toLine);
+        toLine = Math.Max(fromLine, toLine);
+
+        _colorRangeMin = fromLine;
+        _colorRangeMax = toLine;
+    }
+
+    void ColorizeIncremental()
+    {
+        if (_lines.Count == 0 || !IsColorizerEnabled || _colorRangeMin >= _colorRangeMax)
             return;
 
-        /*
-        if (_checkComments)
+        int increment = _syntaxHighlighter.MaxLinesPerFrame;
+        int to = Math.Min(_colorRangeMin + increment, _colorRangeMax);
+
+        for (int lineIndex = _colorRangeMin; lineIndex < to; lineIndex++)
         {
-            var endLine = _lines.Count;
-            var endIndex = 0;
-            var commentStartLine = endLine;
-            var commentStartIndex = endIndex;
-            var withinString = false;
-            var withinSingleLineComment = false;
-            var withinPreproc = false;
-            var firstChar = true;           // there is no other non-whitespace characters in the line before
-            var concatenate = false;        // '\' on the very end of the line
-            var currentLine = 0;
-            var currentIndex = 0;
-            while (currentLine < endLine || currentIndex < endIndex)
-            {
-                var line = _lines[currentLine];
-
-                if (currentIndex == 0 && !concatenate)
-                {
-                    withinSingleLineComment = false;
-                    withinPreproc = false;
-                    firstChar = true;
-                }
-
-                concatenate = false;
-
-                if (line.Count != 0)
-                {
-                    var g = line[currentIndex];
-                    var c = g._char;
-
-                    if (c != _languageDefinition._preprocChar && !char.IsWhiteSpace(c))
-                        firstChar = false;
-
-                    if (currentIndex == line.Count - 1 && line[^1]._char == '\\')
-                        concatenate = true;
-
-                    bool inComment = (commentStartLine < currentLine || (commentStartLine == currentLine && commentStartIndex <= currentIndex));
-
-                    if (withinString)
-                    {
-                        g._multiLineComment = inComment;
-
-                        if (c == '\"')
-                        {
-                            if (currentIndex + 1 < line.Count && line[currentIndex + 1]._char == '\"')
-                            {
-                                currentIndex += 1;
-                                if (currentIndex < line.Count)
-                                    g._multiLineComment = inComment;
-                            }
-                            else
-                                withinString = false;
-                        }
-                        else if (c == '\\')
-                        {
-                            currentIndex += 1;
-                            if (currentIndex < line.Count)
-                                g._multiLineComment = inComment;
-                        }
-                    }
-                    else
-                    {
-                        if (firstChar && c == _languageDefinition._preprocChar)
-                            withinPreproc = true;
-
-                        if (c == '\"')
-                        {
-                            withinString = true;
-                            g._multiLineComment = inComment;
-                        }
-                        else
-                        {
-                            bool pred(char a, Glyph b) { return a == b._char; }
-                            var from = line.begin() + currentIndex;
-                            var startStr = _languageDefinition._commentStart;
-                            var singleStartStr = _languageDefinition._singleLineComment;
-
-                            if (singleStartStr.Count > 0 &&
-                                currentIndex + singleStartStr.Count <= line.Count &&
-                                equals(singleStartStr.begin(), singleStartStr.end(), from, from + singleStartStr.Count, pred))
-                            {
-                                withinSingleLineComment = true;
-                            }
-                            else if (!withinSingleLineComment && currentIndex + startStr.Count <= line.Count &&
-                                equals(startStr.begin(), startStr.end(), from, from + startStr.Count, pred))
-                            {
-                                commentStartLine = currentLine;
-                                commentStartIndex = currentIndex;
-                            }
-
-                            inComment = inComment = (commentStartLine < currentLine || (commentStartLine == currentLine && commentStartIndex <= currentIndex));
-
-                            g._multiLineComment = inComment;
-                            g._comment = withinSingleLineComment;
-
-                            var endStr = _languageDefinition._commentEnd;
-                            if (currentIndex + 1 >= (int)endStr.Count &&
-                                equals(endStr.begin(), endStr.end(), from + 1 - endStr.Count, from + 1, pred))
-                            {
-                                commentStartIndex = endIndex;
-                                commentStartLine = endLine;
-                            }
-                        }
-                    }
-
-                    g._preprocessor = withinPreproc;
-                    line[currentIndex] = g;
-
-                    currentIndex += UTF8CharLength(c);
-                    if (currentIndex >= line.Count)
-                    {
-                        currentIndex = 0;
-                        ++currentLine;
-                    }
-                }
-                else
-                {
-                    currentIndex = 0;
-                    ++currentLine;
-                }
-            }
-            _checkComments = false;
+            var glyphs = _lines[lineIndex].Glyphs;
+            var state = lineIndex > 0 ? _lines[lineIndex - 1].SyntaxState : null;
+            state = _syntaxHighlighter.Colorize(CollectionsMarshal.AsSpan(glyphs), state);
+            _lines[lineIndex] = (glyphs, state);
         }
-        */
 
-        if (_colorRangeMin < _colorRangeMax)
+        _colorRangeMin = to;
+
+        if (_colorRangeMax == _colorRangeMin) // Done?
         {
-            int increment = (_languageDefinition.Tokenize == null) ? 10 : 10000;
-            int to = Math.Min(_colorRangeMin + increment, _colorRangeMax);
-            ColorizeRange(_colorRangeMin, to);
-            _colorRangeMin = to;
-
-            if (_colorRangeMax == _colorRangeMin)
-            {
-                _colorRangeMin = int.MaxValue;
-                _colorRangeMax = 0;
-            }
-            return;
+            _colorRangeMin = int.MaxValue;
+            _colorRangeMax = 0;
         }
     }
 
@@ -1048,24 +788,21 @@ public class TextEditor
         float spaceSize = _charWidthCache.Get(' '); // remaining
 
         int colIndex = GetCharacterIndex(aFrom);
-        for (int i = 0; i < line.Count && i < colIndex;)
+        for (int i = 0; i < line.Glyphs.Count && i < colIndex;)
         {
-            if (line[i].Char == '\t')
-            {
-                distance = (1.0f + MathF.Floor((1.0f + distance) / (_tabSize * spaceSize))) * (_tabSize * spaceSize);
-                ++i;
-            }
-            else
-            {
-                distance += _charWidthCache.Get(line[i].Char);
-                i++;
-            }
+            var c = line.Glyphs[i].Char;
+            distance =
+                c == '\t'
+                ? (1.0f + MathF.Floor((1.0f + distance) / (_tabSize * spaceSize))) * (_tabSize * spaceSize)
+                : distance + _charWidthCache.Get(c);
+
+            i++;
         }
 
         return distance;
     }
 
-    internal void EnsureCursorVisible()
+    void EnsureCursorVisible()
     {
         if (!_withinRender)
         {
@@ -1113,7 +850,7 @@ public class TextEditor
         int s = 0;
 
         for (int i = lstart; i < lend; i++)
-            s += _lines[i].Count;
+            s += _lines[i].Glyphs.Count;
 
         var result = new StringBuilder(s + s / 8);
         while (istart < iend || lstart < lend)
@@ -1121,7 +858,7 @@ public class TextEditor
             if (lstart >= _lines.Count)
                 break;
 
-            var line = _lines[lstart];
+            var line = _lines[lstart].Glyphs;
             if (istart < line.Count)
             {
                 result.Append(line[istart].Char);
@@ -1168,7 +905,7 @@ public class TextEditor
     {
         if (aCoordinates.Line < _lines.Count)
         {
-            var line = _lines[aCoordinates.Line];
+            var line = _lines[aCoordinates.Line].Glyphs;
             var cindex = GetCharacterIndex(aCoordinates);
 
             if (cindex + 1 < line.Count)
@@ -1184,12 +921,12 @@ public class TextEditor
         }
     }
 
-    internal void DeleteRange(Coordinates aStart, Coordinates aEnd)
+    void DeleteRange(Coordinates aStart, Coordinates aEnd)
     {
         Util.Assert(aEnd >= aStart);
         Util.Assert(!IsReadOnly);
 
-        //printf("D(%d.%d)-(%d.%d)\n", aStart._line, aStart._column, aEnd._line, aEnd._column);
+        // Console.WriteLine($"D({aStart.Line}.{aStart.Column})-({aEnd.Line}.{aEnd.Column})\n");
 
         if (aEnd == aStart)
             return;
@@ -1199,7 +936,7 @@ public class TextEditor
 
         if (aStart.Line == aEnd.Line)
         {
-            var line = _lines[aStart.Line];
+            var line = _lines[aStart.Line].Glyphs;
             var n = GetLineMaxColumn(aStart.Line);
             if (aEnd.Column >= n)
                 line.RemoveRange(start, line.Count - start);
@@ -1208,8 +945,8 @@ public class TextEditor
         }
         else
         {
-            var firstLine = _lines[aStart.Line];
-            var lastLine = _lines[aEnd.Line];
+            var firstLine = _lines[aStart.Line].Glyphs;
+            var lastLine = _lines[aEnd.Line].Glyphs;
 
             firstLine.RemoveRange(start, firstLine.Count - start);
             lastLine.RemoveRange(0, end);
@@ -1221,18 +958,17 @@ public class TextEditor
                 RemoveLine(aStart.Line + 1, aEnd.Line + 1);
         }
 
-        _textChanged = true;
+        IsTextChanged = true;
     }
 
-    internal int InsertTextAt(Coordinates aWhere, string aValue)
+    int InsertTextAt(Coordinates pos, string value)
     {
         Util.Assert(!IsReadOnly);
 
-        int cindex = GetCharacterIndex(aWhere);
+        int cindex = GetCharacterIndex(pos);
         int totalLines = 0;
-        for (var index = 0; index < aValue.Length; index++)
+        foreach (var c in value)
         {
-            var c = aValue[index];
             Util.Assert(_lines.Count != 0);
 
             if (c == '\r')
@@ -1240,34 +976,34 @@ public class TextEditor
 
             if (c == '\n')
             {
-                if (cindex < _lines[aWhere.Line].Count)
+                if (cindex < _lines[pos.Line].Glyphs.Count)
                 {
-                    var newLine = InsertLine(aWhere.Line + 1);
-                    var line = _lines[aWhere.Line];
+                    var newLine = InsertLine(pos.Line + 1);
+                    var line = _lines[pos.Line].Glyphs;
                     newLine.InsertRange(0, line.Skip(cindex));
                     line.RemoveRange(cindex, line.Count - cindex);
                 }
                 else
                 {
-                    InsertLine(aWhere.Line + 1);
+                    InsertLine(pos.Line + 1);
                 }
 
-                aWhere.Line++;
-                aWhere.Column = 0;
+                pos.Line++;
+                pos.Column = 0;
                 cindex = 0;
                 totalLines++;
             }
             else
             {
-                var line = _lines[aWhere.Line];
-                var glyph = new Glyph(aValue[index], PaletteIndex.Default);
+                var line = _lines[pos.Line].Glyphs;
+                var glyph = new Glyph(c, PaletteIndex.Default);
                 line.Insert(cindex, glyph);
 
                 cindex++;
-                aWhere.Column++;
+                pos.Column++;
             }
 
-            _textChanged = true;
+            IsTextChanged = true;
         }
 
         return totalLines;
@@ -1296,7 +1032,7 @@ public class TextEditor
 
         if (lineNo < _lines.Count)
         {
-            var line = _lines[lineNo];
+            var line = _lines[lineNo].Glyphs;
 
             int columnIndex = 0;
             float columnX = 0.0f;
@@ -1338,7 +1074,7 @@ public class TextEditor
         if (aFrom.Line >= _lines.Count)
             return aFrom;
 
-        var line = _lines[aFrom.Line];
+        var line = _lines[aFrom.Line].Glyphs;
         var cindex = GetCharacterIndex(aFrom);
 
         if (cindex >= line.Count)
@@ -1358,7 +1094,7 @@ public class TextEditor
                     cindex++;
                     break;
                 }
-                if (cstart != line[(int)(cindex - 1)].ColorIndex)
+                if (cstart != line[cindex - 1].ColorIndex)
                     break;
             }
             --cindex;
@@ -1373,7 +1109,7 @@ public class TextEditor
         if (at.Line >= _lines.Count)
             return at;
 
-        var line = _lines[at.Line];
+        var line = _lines[at.Line].Glyphs;
         var cindex = GetCharacterIndex(at);
 
         if (cindex >= line.Count)
@@ -1409,9 +1145,9 @@ public class TextEditor
         var cindex = GetCharacterIndex(aFrom);
         bool isword = false;
         bool skip = false;
-        if (cindex < _lines[at.Line].Count)
+        if (cindex < _lines[at.Line].Glyphs.Count)
         {
-            var line = _lines[at.Line];
+            var line = _lines[at.Line].Glyphs;
             isword = char.IsLetterOrDigit(line[cindex].Char);
             skip = isword;
         }
@@ -1424,7 +1160,7 @@ public class TextEditor
                 return new Coordinates(l, GetLineMaxColumn(l));
             }
 
-            var line = _lines[at.Line];
+            var line = _lines[at.Line].Glyphs;
             if (cindex < line.Count)
             {
                 isword = char.IsLetterOrDigit(line[cindex].Char);
@@ -1454,7 +1190,7 @@ public class TextEditor
         if (aCoordinates.Line >= _lines.Count)
             return -1;
 
-        var line = _lines[aCoordinates.Line];
+        var line = _lines[aCoordinates.Line].Glyphs;
         int c = 0;
         int i = 0;
 
@@ -1475,7 +1211,7 @@ public class TextEditor
         if (aLine >= _lines.Count)
             return 0;
 
-        var line = _lines[aLine];
+        var line = _lines[aLine].Glyphs;
         int col = 0;
         int i = 0;
 
@@ -1492,20 +1228,14 @@ public class TextEditor
         return col;
     }
 
-    int GetLineCharacterCount(int aLine)
-    {
-        if (aLine >= _lines.Count)
-            return 0;
-
-        return _lines[aLine].Count;
-    }
-
     int GetLineMaxColumn(int aLine)
     {
         if (aLine >= _lines.Count)
             return 0;
-        var line = _lines[aLine];
+
+        var line = _lines[aLine].Glyphs;
         int col = 0;
+
         for (int i = 0; i < line.Count;)
         {
             var c = line[i].Char;
@@ -1515,6 +1245,7 @@ public class TextEditor
                 col++;
             i++;
         }
+
         return col;
     }
 
@@ -1523,13 +1254,13 @@ public class TextEditor
         if (aAt.Line >= _lines.Count || aAt.Column == 0)
             return true;
 
-        var line = _lines[aAt.Line];
+        var line = _lines[aAt.Line].Glyphs;
         var cindex = GetCharacterIndex(aAt);
         if (cindex >= line.Count)
             return true;
 
         if (IsColorizerEnabled)
-            return line[cindex].ColorIndex != line[(int)(cindex - 1)].ColorIndex;
+            return line[cindex].ColorIndex != line[cindex - 1].ColorIndex;
 
         return char.IsWhiteSpace(line[cindex].Char) != char.IsWhiteSpace(line[cindex - 1].Char);
     }
@@ -1564,7 +1295,7 @@ public class TextEditor
         _lines.RemoveRange(aStart, aEnd - aStart);
         Util.Assert(_lines.Count != 0);
 
-        _textChanged = true;
+        IsTextChanged = true;
     }
 
     void RemoveLine(int aIndex)
@@ -1595,14 +1326,14 @@ public class TextEditor
         _lines.RemoveRange(aIndex, _lines.Count - aIndex);
         Util.Assert(_lines.Count != 0);
 
-        _textChanged = true;
+        IsTextChanged = true;
     }
 
     List<Glyph> InsertLine(int aIndex)
     {
         Util.Assert(!IsReadOnly);
 
-        var result = new List<Glyph>();
+        var result = BlankLine;
         _lines.Insert(aIndex, result);
 
         Dictionary<int, string> etmp = new();
@@ -1615,7 +1346,7 @@ public class TextEditor
             btmp.Add(i >= aIndex ? i + 1 : i);
         _breakpoints = btmp;
 
-        return result;
+        return result.Glyphs;
     }
 
     void EnterCharacter(char aChar, bool aShift)
@@ -1655,7 +1386,7 @@ public class TextEditor
 
                 for (int i = start.Line; i <= end.Line; i++)
                 {
-                    var line = _lines[i];
+                    var line = _lines[i].Glyphs;
                     if (aShift)
                     {
                         if (line.Count != 0)
@@ -1707,7 +1438,7 @@ public class TextEditor
                     _state.SelectionEnd = end;
                     AddUndo(u);
 
-                    _textChanged = true;
+                    IsTextChanged = true;
 
                     EnsureCursorVisible();
                 }
@@ -1731,10 +1462,10 @@ public class TextEditor
         if (aChar == '\n')
         {
             InsertLine(coord.Line + 1);
-            var line = _lines[coord.Line];
-            var newLine = _lines[coord.Line + 1];
+            var line = _lines[coord.Line].Glyphs;
+            var newLine = _lines[coord.Line + 1].Glyphs;
 
-            if (_languageDefinition.AutoIndentation)
+            if (_syntaxHighlighter.AutoIndentation)
                 for (int it = 0; it < line.Count && char.IsAscii(line[it].Char) && IsBlank(line[it].Char); ++it)
                     newLine.Add(line[it]);
 
@@ -1747,7 +1478,7 @@ public class TextEditor
         }
         else
         {
-            var line = _lines[coord.Line];
+            var line = _lines[coord.Line].Glyphs;
             var cindex = GetCharacterIndex(coord);
 
             if (_overwrite && cindex < line.Count)
@@ -1765,14 +1496,14 @@ public class TextEditor
             CursorPosition = new Coordinates(coord.Line, GetCharacterColumn(coord.Line, cindex + 1));
         }
 
-        _textChanged = true;
+        IsTextChanged = true;
 
         u.AddedEnd = GetActualCursorCoordinates();
         u.After = _state;
 
         AddUndo(u);
 
-        Colorize(coord.Line - 1, 3);
+        InvalidateColor(coord.Line - 1, 3);
         EnsureCursorVisible();
     }
 
@@ -1809,8 +1540,8 @@ public class TextEditor
                 u.RemovedStart = u.RemovedEnd = new Coordinates(pos.Line - 1, GetLineMaxColumn(pos.Line - 1));
                 Advance(u.RemovedEnd);
 
-                var line = _lines[_state.CursorPosition.Line];
-                var prevLine = _lines[_state.CursorPosition.Line - 1];
+                var line = _lines[_state.CursorPosition.Line].Glyphs;
+                var prevLine = _lines[_state.CursorPosition.Line - 1].Glyphs;
                 var prevSize = GetLineMaxColumn(_state.CursorPosition.Line - 1);
                 prevLine.AddRange(line);
 
@@ -1825,14 +1556,11 @@ public class TextEditor
             }
             else
             {
-                var line = _lines[_state.CursorPosition.Line];
+                var line = _lines[_state.CursorPosition.Line].Glyphs;
                 var cindex = GetCharacterIndex(pos) - 1;
                 var cend = cindex + 1;
                 while (cindex > 0 && IsUTFSequence(line[cindex].Char))
                     --cindex;
-
-                //if (cindex > 0 && UTF8CharLength(line[cindex]._char) > 1)
-                //    --cindex;
 
                 u.RemovedStart = u.RemovedEnd = GetActualCursorCoordinates();
                 --u.RemovedStart.Column;
@@ -1845,10 +1573,10 @@ public class TextEditor
                 }
             }
 
-            _textChanged = true;
+            IsTextChanged = true;
 
             EnsureCursorVisible();
-            Colorize(_state.CursorPosition.Line, 1);
+            InvalidateColor(_state.CursorPosition.Line, 1);
         }
 
         u.After = _state;
@@ -1866,10 +1594,9 @@ public class TextEditor
 
         SetSelection(_state.SelectionStart, _state.SelectionStart);
         CursorPosition = _state.SelectionStart;
-        Colorize(_state.SelectionStart.Line, 1);
+        InvalidateColor(_state.SelectionStart.Line, 1);
     }
 
-    string GetWordUnderCursor() => GetWordAt(CursorPosition);
     string GetWordAt(Coordinates aCoords)
     {
         var start = FindWordStart(aCoords);
@@ -1881,35 +1608,12 @@ public class TextEditor
         var iend = GetCharacterIndex(end);
 
         for (var it = istart; it < iend; ++it)
-            sb.Append(_lines[aCoords.Line][it].Char);
+            sb.Append(_lines[aCoords.Line].Glyphs[it].Char);
 
         return sb.ToString();
     }
 
-    uint GetGlyphColor(Glyph aGlyph)
-    {
-        if (!IsColorizerEnabled)
-            return _palette[(int)PaletteIndex.Default];
-
-        if (aGlyph.Comment)
-            return _palette[(int)PaletteIndex.Comment];
-
-        if (aGlyph.MultiLineComment)
-            return _palette[(int)PaletteIndex.MultiLineComment];
-
-        var color = _palette[(int)aGlyph.ColorIndex];
-        if (aGlyph.Preprocessor)
-        {
-            uint ppcolor = _palette[(int)PaletteIndex.Preprocessor];
-            uint c0 = ((ppcolor & 0xff) + (color & 0xff)) / 2;
-            uint c1 = (((ppcolor >> 8) & 0xff) + ((color >> 8) & 0xff)) / 2;
-            uint c2 = (((ppcolor >> 16) & 0xff) + ((color >> 16) & 0xff)) / 2;
-            uint c3 = (((ppcolor >> 24) & 0xff) + ((color >> 24) & 0xff)) / 2;
-            return (c0 | (c1 << 8) | (c2 << 16) | (c3 << 24));
-        }
-
-        return color;
-    }
+    uint GetGlyphColor(Glyph aGlyph) => _palette[(int)aGlyph.ColorIndex];
 
     void HandleKeyboardInputs()
     {
@@ -2008,7 +1712,11 @@ public class TextEditor
         var click = ImGui.IsMouseClicked(0);
         var doubleClick = ImGui.IsMouseDoubleClicked(0);
         var t = ImGui.GetTime();
-        var tripleClick = click && !doubleClick && (_lastClick != -1.0f && (t - _lastClick) < io.MouseDoubleClickTime);
+        var tripleClick = 
+            click && 
+            !doubleClick && 
+            _lastClick != -1.0f 
+            && t - _lastClick < io.MouseDoubleClickTime;
 
         /* Left mouse button triple click */
         if (tripleClick)
@@ -2029,10 +1737,7 @@ public class TextEditor
             if (!ctrl)
             {
                 _state.CursorPosition = _interactiveStart = _interactiveEnd = ScreenPosToCoordinates(ImGui.GetMousePos());
-                if (_selectionMode == SelectionMode.Line)
-                    _selectionMode = SelectionMode.Normal;
-                else
-                    _selectionMode = SelectionMode.Word;
+                _selectionMode = _selectionMode == SelectionMode.Line ? SelectionMode.Normal : SelectionMode.Word;
                 SetSelection(_interactiveStart, _interactiveEnd, _selectionMode);
             }
 
@@ -2043,10 +1748,7 @@ public class TextEditor
         else if (click)
         {
             _state.CursorPosition = _interactiveStart = _interactiveEnd = ScreenPosToCoordinates(ImGui.GetMousePos());
-            if (ctrl)
-                _selectionMode = SelectionMode.Word;
-            else
-                _selectionMode = SelectionMode.Normal;
+            _selectionMode = ctrl ? SelectionMode.Word : SelectionMode.Normal;
             SetSelection(_interactiveStart, _interactiveEnd, _selectionMode);
 
             _lastClick = (float)ImGui.GetTime();
@@ -2106,9 +1808,11 @@ public class TextEditor
                 Vector2 lineStartScreenPos = cursorScreenPos with { Y = cursorScreenPos.Y + lineNo * _charAdvance.Y };
                 Vector2 textScreenPos = lineStartScreenPos with { X = lineStartScreenPos.X + _textStart };
 
-                var line = _lines[lineNo];
-                longest = Math.Max(_textStart + TextDistanceToLineStart(new Coordinates(lineNo, GetLineMaxColumn(lineNo))), longest);
-                var columnNo = 0;
+                var line = _lines[lineNo].Glyphs;
+                longest = Math.Max(
+                    _textStart + TextDistanceToLineStart(new Coordinates(lineNo, GetLineMaxColumn(lineNo))),
+                    longest);
+
                 Coordinates lineStartCoord = new(lineNo, 0);
                 Coordinates lineEndCoord = new(lineNo, GetLineMaxColumn(lineNo));
 
@@ -2281,8 +1985,6 @@ public class TextEditor
                     {
                         _lineBuffer += line[i++].Char;
                     }
-
-                    ++columnNo;
                 }
 
                 if (_lineBuffer.Length != 0)
@@ -2295,26 +1997,17 @@ public class TextEditor
                 ++lineNo;
             }
 
-            // Draw a tooltip on known identifiers/preprocessor symbols
             if (ImGui.IsMousePosValid())
             {
                 var id = GetWordAt(ScreenPosToCoordinates(ImGui.GetMousePos()));
                 if (id.Length != 0)
                 {
-                    if (_languageDefinition.Identifiers.TryGetValue(id, out var identifier))
+                    var tooltip = _syntaxHighlighter.GetTooltip(id);
+                    if (tooltip != null)
                     {
                         ImGui.BeginTooltip();
-                        ImGui.TextUnformatted(identifier.Declaration);
+                        ImGui.TextUnformatted(tooltip);
                         ImGui.EndTooltip();
-                    }
-                    else
-                    {
-                        if (_languageDefinition.PreprocIdentifiers.TryGetValue(id, out identifier))
-                        {
-                            ImGui.BeginTooltip();
-                            ImGui.TextUnformatted(identifier.Declaration);
-                            ImGui.EndTooltip();
-                        }
                     }
                 }
             }

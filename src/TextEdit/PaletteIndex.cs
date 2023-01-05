@@ -1,5 +1,5 @@
 namespace ImGuiColorTextEditNet;
-public enum PaletteIndex : byte
+public enum PaletteIndex : ushort
 {
     Default,
     Keyword,
