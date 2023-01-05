@@ -3,8 +3,8 @@ namespace ImGuiColorTextEditNet;
 public class LanguageDefinition
 {
     public string Name;
-    public string[] Keywords;
-    public string[] Identifiers;
+    public string[]? Keywords;
+    public string[]? Identifiers;
     public string CommentStart = "/*";
     public string CommentEnd = "*/";
     public string SingleLineComment = "//";

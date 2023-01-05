@@ -16,14 +16,21 @@ public class CStyleHighlighter : ISyntaxHighlighter
     {
         var language = useCpp ? CPlusPlus() : C();
 
-        var identifiers = language.Keywords.Select(x
-            => (x, new Identifier(PaletteIndex.Keyword)));
+        var identifiers = Enumerable.Empty<(string x, Identifier)>();
+        if (language.Keywords != null)
+        {
+            identifiers = identifiers.Concat(language.Keywords.Select(x
+                => (x, new Identifier(PaletteIndex.Keyword))));
+        }
 
-        identifiers = identifiers.Concat(language.Identifiers.Select(x
-                    => (x, new Identifier(PaletteIndex.KnownIdentifier)
-                    {
-                        Declaration = "Built-in function"
-                    })));
+        if (language.Identifiers != null)
+        {
+            identifiers = identifiers.Concat(language.Identifiers.Select(x
+                => (x, new Identifier(PaletteIndex.KnownIdentifier)
+                {
+                    Declaration = "Built-in function"
+                })));
+        }
 
         _identifiers = new SimpleTrie<Identifier>(identifiers);
     }

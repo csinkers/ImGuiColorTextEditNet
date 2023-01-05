@@ -6,7 +6,7 @@ namespace ImGuiColorTextEditNet;
 public static class Util
 {
     public delegate void AssertionFailedHandler(string? expression, string? file, int line, string? method);
-    public static event AssertionFailedHandler AssertionFailed;
+    public static event AssertionFailedHandler? AssertionFailed;
 
     [Conditional("DEBUG")]
     public static void Assert(bool condition,

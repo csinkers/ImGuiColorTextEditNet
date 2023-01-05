@@ -8,5 +8,5 @@ public class NullSyntaxHighlighter : ISyntaxHighlighter
     public bool AutoIndentation { get; init; }
     public int MaxLinesPerFrame { get; init; } = 1000;
     public string? GetTooltip(string id) => null;
-    public object Colorize(Span<Glyph> line, object state) => DefaultState;
+    public object Colorize(Span<Glyph> line, object? state) => DefaultState;
 }
