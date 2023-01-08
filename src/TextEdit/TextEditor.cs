@@ -205,7 +205,7 @@ public class TextEditor
                 | ImGuiWindowFlags.NoMove);
         }
 
-        if (IsHandleMouseInputsEnabled)
+        if (IsHandleKeyboardInputsEnabled)
         {
             HandleKeyboardInputs();
             ImGui.PushAllowKeyboardFocus(true);
@@ -217,7 +217,7 @@ public class TextEditor
         ColorizeIncremental();
         Render();
 
-        if (IsHandleMouseInputsEnabled)
+        if (IsHandleKeyboardInputsEnabled)
             ImGui.PopAllowKeyboardFocus();
 
         if (!IsImGuiChildIgnored)
@@ -1051,7 +1051,7 @@ public class TextEditor
                         break;
 
                     columnX = newColumnX;
-                    columnCoord = (columnCoord / _tabSize) * _tabSize + _tabSize;
+                    columnCoord = columnCoord / _tabSize * _tabSize + _tabSize;
                     columnIndex++;
                 }
                 else
@@ -1197,7 +1197,7 @@ public class TextEditor
         for (; i < line.Count && c < aCoordinates.Column;)
         {
             if (line[i].Char == '\t')
-                c = (c / _tabSize) * _tabSize + _tabSize;
+                c = c / _tabSize * _tabSize + _tabSize;
             else
                 ++c;
             i++;
@@ -1220,7 +1220,7 @@ public class TextEditor
             var c = line[i].Char;
             i++;
             if (c == '\t')
-                col = (col / _tabSize) * _tabSize + _tabSize;
+                col = col / _tabSize * _tabSize + _tabSize;
             else
                 col++;
         }
@@ -1240,7 +1240,7 @@ public class TextEditor
         {
             var c = line[i].Char;
             if (c == '\t')
-                col = (col / _tabSize) * _tabSize + _tabSize;
+                col = col / _tabSize * _tabSize + _tabSize;
             else
                 col++;
             i++;
@@ -1323,7 +1323,7 @@ public class TextEditor
         }
         _breakpoints = btmp;
 
-        _lines.RemoveRange(aIndex, _lines.Count - aIndex);
+        _lines.RemoveAt(aIndex);
         Util.Assert(_lines.Count != 0);
 
         IsTextChanged = true;
@@ -1622,77 +1622,58 @@ public class TextEditor
         var ctrl = io.ConfigMacOSXBehaviors ? io.KeySuper : io.KeyCtrl;
         var alt = io.ConfigMacOSXBehaviors ? io.KeyCtrl : io.KeyAlt;
 
-        if (ImGui.IsWindowFocused())
+        if (!ImGui.IsWindowFocused())
+            return;
+
+        if (ImGui.IsWindowHovered())
+            ImGui.SetMouseCursor(ImGuiMouseCursor.TextInput);
+        //ImGui.CaptureKeyboardFromApp(true);
+
+        io.WantCaptureKeyboard = true;
+        io.WantTextInput = true;
+
+        if (!IsReadOnly)
         {
-            if (ImGui.IsWindowHovered())
-                ImGui.SetMouseCursor(ImGuiMouseCursor.TextInput);
-            //ImGui.CaptureKeyboardFromApp(true);
-
-            io.WantCaptureKeyboard = true;
-            io.WantTextInput = true;
-
-            if (!IsReadOnly && ctrl && !shift && !alt && ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.Z)))
-                Undo();
-            else if (!IsReadOnly && !ctrl && !shift && alt && ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.Backspace)))
-                Undo();
-            else if (!IsReadOnly && ctrl && !shift && !alt && ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.Y)))
-                Redo();
-            else if (!ctrl && !alt && ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.UpArrow)))
-                MoveUp(1, shift);
-            else if (!ctrl && !alt && ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.DownArrow)))
-                MoveDown(1, shift);
-            else if (!alt && ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.LeftArrow)))
-                MoveLeft(1, shift, ctrl);
-            else if (!alt && ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.RightArrow)))
-                MoveRight(1, shift, ctrl);
-            else if (!alt && ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.PageUp)))
-                MoveUp(GetPageSize() - 4, shift);
-            else if (!alt && ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.PageDown)))
-                MoveDown(GetPageSize() - 4, shift);
-            else if (!alt && ctrl && ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.Home)))
-                MoveTop(shift);
-            else if (ctrl && !alt && ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.End)))
-                MoveBottom(shift);
-            else if (!ctrl && !alt && ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.Home)))
-                MoveHome(shift);
-            else if (!ctrl && !alt && ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.End)))
-                MoveEnd(shift);
-            else if (!IsReadOnly && !ctrl && !shift && !alt && ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.Delete)))
-                Delete();
-            else if (!IsReadOnly && !ctrl && !shift && !alt && ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.Backspace)))
-                Backspace();
-            else if (!ctrl && !shift && !alt && ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.Insert)))
-                _overwrite ^= true;
-            else if (ctrl && !shift && !alt && ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.Insert)))
-                Copy();
-            else if (ctrl && !shift && !alt && ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.C)))
-                Copy();
-            else if (!IsReadOnly && !ctrl && shift && !alt && ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.Insert)))
-                Paste();
-            else if (!IsReadOnly && ctrl && !shift && !alt && ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.V)))
-                Paste();
-            else if (ctrl && !shift && !alt && ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.X)))
-                Cut();
-            else if (!ctrl && shift && !alt && ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.Delete)))
-                Cut();
-            else if (ctrl && !shift && !alt && ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.A)))
-                SelectAll();
-            else if (!IsReadOnly && !ctrl && !shift && !alt && ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.Enter)))
-                EnterCharacter('\n', false);
-            else if (!IsReadOnly && !ctrl && !alt && ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.Tab)))
-                EnterCharacter('\t', shift);
-
-            if (!IsReadOnly && io.InputQueueCharacters.Size != 0)
+            switch (ctrl, shift, alt)
             {
-                for (int i = 0; i < io.InputQueueCharacters.Size; i++)
-                {
-                    var c = io.InputQueueCharacters[i];
-                    if (c != 0 && c is '\n' or >= 32)
-                        EnterCharacter((char)c, shift);
-                }
-
-                // io.InputQueueCharacters.resize(0); // TODO: Revisit
+                case (true, false, false)  when ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.Z)): Undo(); break;
+                case (true, false, false)  when ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.Y)): Redo(); break;
+                case (false, false, false) when ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.Delete)): Delete(); break;
+                case (false, false, false) when ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.Backspace)): Backspace(); break;
+                case (true, false, false)  when ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.V)): Paste(); break;
+                case (true, false, false)  when ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.X)): Cut(); break;
+                case (false, false, false) when ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.Enter)): EnterCharacter('\n', false); break;
+                case (false, _, false)     when ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.Tab)): EnterCharacter('\t', shift); break;
             }
+        }
+
+        switch (ctrl, shift, alt)
+        {
+            case (false, _, false) when ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.UpArrow)):    MoveUp(1, shift); break;
+            case (false, _, false) when ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.DownArrow)):  MoveDown(1, shift); break;
+            case (_, _, false)     when ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.LeftArrow)):  MoveLeft(1, shift, ctrl); break;
+            case (_, _, false)     when ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.RightArrow)): MoveRight(1, shift, ctrl); break;
+            case (_, _, false)     when ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.PageUp)):     MoveUp(GetPageSize() - 4, shift); break;
+            case (_, _, false)     when ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.PageDown)):   MoveDown(GetPageSize() - 4, shift); break;
+            case (true, _, false)  when ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.Home)):       MoveTop(shift); break;
+            case (true, _, false)  when ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.End)):        MoveBottom(shift); break;
+            case (false, _, false) when ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.Home)):       MoveHome(shift); break;
+            case (false, _, false) when ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.End)):        MoveEnd(shift); break;
+            case (false, false, false) when ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.Insert)): _overwrite = !_overwrite; break;
+            case (true, false, false)  when ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.C)):      Copy(); break;
+            case (true, false, false)  when ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.A)):      SelectAll(); break;
+        }
+
+        if (!IsReadOnly && io.InputQueueCharacters.Size != 0)
+        {
+            for (int i = 0; i < io.InputQueueCharacters.Size; i++)
+            {
+                var c = io.InputQueueCharacters[i];
+                if (c != 0 && c is '\n' or >= 32)
+                    EnterCharacter((char)c, shift);
+            }
+
+            // io.InputQueueCharacters.resize(0); // TODO: Revisit
         }
     }
 
