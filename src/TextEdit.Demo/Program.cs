@@ -4,7 +4,7 @@ using ImGuiNET;
 using Veldrid;
 using Veldrid.StartupUtilities;
 
-namespace TextEdit.Test;
+namespace TextEdit.Demo;
 
 public static class Program
 {

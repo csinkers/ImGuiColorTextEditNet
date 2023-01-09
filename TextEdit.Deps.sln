@@ -5,7 +5,9 @@ VisualStudioVersion = 17.0.32014.148
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ImGuiColorTextEditNet", "src\TextEdit\ImGuiColorTextEditNet.csproj", "{470F68F3-B89D-4BA0-A3FD-35C5F252B43C}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TextEdit.Test", "src\TextEdit.Test\TextEdit.Test.csproj", "{2EA4B6F7-B373-40B7-8D95-A1AC001FEA38}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TextEdit.Demo", "src\TextEdit.Demo\TextEdit.Demo.csproj", "{2EA4B6F7-B373-40B7-8D95-A1AC001FEA38}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TextEdit.Tests", "src\TextEdit.Tests\TextEdit.Tests.csproj", "{65970BAE-B6B5-4F31-8652-00D34F84F398}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Veldrid", "..\veldrid\src\Veldrid\Veldrid.csproj", "{E902D105-3605-4D46-9ED9-041EE9B02357}"
 EndProject
@@ -29,6 +31,10 @@ Global
 		{2EA4B6F7-B373-40B7-8D95-A1AC001FEA38}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2EA4B6F7-B373-40B7-8D95-A1AC001FEA38}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2EA4B6F7-B373-40B7-8D95-A1AC001FEA38}.Release|Any CPU.Build.0 = Release|Any CPU
+		{65970BAE-B6B5-4F31-8652-00D34F84F398}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{65970BAE-B6B5-4F31-8652-00D34F84F398}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{65970BAE-B6B5-4F31-8652-00D34F84F398}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{65970BAE-B6B5-4F31-8652-00D34F84F398}.Release|Any CPU.Build.0 = Release|Any CPU
 		{E902D105-3605-4D46-9ED9-041EE9B02357}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{E902D105-3605-4D46-9ED9-041EE9B02357}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E902D105-3605-4D46-9ED9-041EE9B02357}.Release|Any CPU.ActiveCfg = Release|Any CPU

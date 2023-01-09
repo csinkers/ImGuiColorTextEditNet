@@ -13,12 +13,12 @@ public struct Coordinates : IEquatable<Coordinates>
     public int Column;
 
     public Coordinates() { Line = 0; Column = 0; }
-    public Coordinates(int aLine, int aColumn)
+    public Coordinates(int line, int column)
     {
-        Util.Assert(aLine >= 0);
-        Util.Assert(aColumn >= 0);
-        Line = aLine;
-        Column = aColumn;
+        Util.Assert(line >= 0);
+        Util.Assert(column >= 0);
+        Line = line;
+        Column = column;
     }
 
     public override string ToString() => $"{Line}:{Column}";
