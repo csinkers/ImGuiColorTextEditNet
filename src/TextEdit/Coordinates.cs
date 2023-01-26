@@ -21,6 +21,8 @@ public struct Coordinates : IEquatable<Coordinates>
         Column = column;
     }
 
+    public static implicit operator Coordinates((int Line, int Column) x) => new(x.Line, x.Column);
+
     public override string ToString() => $"{Line}:{Column}";
     public static Coordinates Invalid => new() { Line = -1, Column = -1 };
 

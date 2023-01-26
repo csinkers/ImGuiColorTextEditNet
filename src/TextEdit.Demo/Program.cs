@@ -45,8 +45,9 @@ public static class Program
             imguiRenderer.WindowResized(window.Width, window.Height);
         };
 
-        var editor = new TextEditor(new CStyleHighlighter(true))
+        var editor = new TextEditor
         {
+            SyntaxHighlighter = new CStyleHighlighter(true),
             Text = @"#include <stdio.h>
 
 void main(int argc, char **argv) {
@@ -85,6 +86,7 @@ void main(int argc, char **argv) {
             ImGui.SetNextWindowSize(new Vector2(window.Width, window.Height));
             ImGui.Begin("Demo");
 
+            ImGui.Text($"Cur:{editor.CursorPosition} SEL: {editor.SelectionStart} - {editor.SelectionEnd}");
             editor.Render("EditWindow");
 
             ImGui.End();

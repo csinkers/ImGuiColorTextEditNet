@@ -2,12 +2,24 @@ namespace ImGuiColorTextEditNet;
 
 class SimpleCache<TKey, TValue> where TKey : notnull
 {
+    const int CyclePeriod = 500;
+
     readonly string _name;
     readonly Func<TKey, TValue> _valueBuilder;
-    const int CyclePeriod = 500;
+
     Dictionary<TKey, TValue> _cache = new();
     Dictionary<TKey, TValue> _lastCache = new();
     int _cycleCounter;
+
+#if DEBUG
+    int _hits;
+    int _requests;
+
+    public override string ToString()
+        => $"Cache for {_name}. Hit rate {100.0f * _hits / _requests:F1}%, size {_cache.Count} + {_lastCache.Count}";
+#else
+    public override string ToString() => $"Cache for {_name}";
+#endif
 
     public SimpleCache(string name, Func<TKey, TValue> valueBuilder)
     {
@@ -17,6 +29,9 @@ class SimpleCache<TKey, TValue> where TKey : notnull
 
     public TValue Get(TKey value)
     {
+#if DEBUG
+        _requests++;
+#endif
         if (_cycleCounter++ >= CyclePeriod)
         {
             _cycleCounter = 0;
@@ -29,10 +44,18 @@ class SimpleCache<TKey, TValue> where TKey : notnull
         }
 
         if (_cache.TryGetValue(value, out var label))
+        {
+#if DEBUG
+            _hits++;
+#endif
             return label;
+        }
 
         if (_lastCache.TryGetValue(value, out label))
         {
+#if DEBUG
+            _hits++;
+#endif
             _cache[value] = label;
             return label;
         }

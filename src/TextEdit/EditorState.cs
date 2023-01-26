@@ -5,5 +5,4 @@ struct EditorState
     public Coordinates SelectionEnd;
     public Coordinates CursorPosition;
     public override string ToString() => $"SEL [{SelectionStart}-{SelectionEnd}] CUR {CursorPosition}";
-
 }

@@ -16,23 +16,22 @@ public class CStyleHighlighter : ISyntaxHighlighter
     {
         var language = useCpp ? CPlusPlus() : C();
 
-        var identifiers = Enumerable.Empty<(string x, Identifier)>();
+        _identifiers = new SimpleTrie<Identifier>();
         if (language.Keywords != null)
-        {
-            identifiers = identifiers.Concat(language.Keywords.Select(x
-                => (x, new Identifier(PaletteIndex.Keyword))));
-        }
+            foreach (var keyword in language.Keywords)
+                _identifiers.Add(keyword, new Identifier(PaletteIndex.Keyword));
 
         if (language.Identifiers != null)
         {
-            identifiers = identifiers.Concat(language.Identifiers.Select(x
-                => (x, new Identifier(PaletteIndex.KnownIdentifier)
+            foreach (var name in language.Identifiers)
+            {
+                var identifier = new Identifier(PaletteIndex.KnownIdentifier)
                 {
                     Declaration = "Built-in function"
-                })));
+                };
+                _identifiers.Add(name, identifier);
+            }
         }
-
-        _identifiers = new SimpleTrie<Identifier>(identifiers);
     }
 
     public bool AutoIndentation => true;
