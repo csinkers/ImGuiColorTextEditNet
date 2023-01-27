@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+
 namespace ImGuiColorTextEditNet;
 
 class SimpleCache<TKey, TValue> where TKey : notnull

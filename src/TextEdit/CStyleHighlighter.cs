@@ -1,3 +1,5 @@
+using System;
+
 namespace ImGuiColorTextEditNet;
 
 public class CStyleHighlighter : ISyntaxHighlighter

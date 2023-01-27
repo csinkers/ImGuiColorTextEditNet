@@ -1,9 +1,18 @@
-namespace ImGuiColorTextEditNet;
-struct Breakpoint
+namespace ImGuiColorTextEditNet
 {
-    public int Line = -1;
-    public bool Enabled = false;
-    public string? Condition = null;
-    public Breakpoint() { }
-    public override string ToString() => $"BP: {Line}:{Condition} ({Enabled})";
+    readonly struct Breakpoint
+    {
+        public readonly int Line;
+        public readonly bool Enabled;
+        public readonly string? Condition;
+
+        public Breakpoint(int line, bool enabled, string? condition)
+        {
+            Line = line;
+            Enabled = enabled;
+            Condition = condition;
+        }
+
+        public override string ToString() => $"BP: {Line}:{Condition} ({Enabled})";
+    }
 }

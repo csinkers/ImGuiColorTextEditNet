@@ -1,4 +1,7 @@
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -189,8 +192,8 @@ public class TextEditor
         if (!IsImGuiChildIgnored)
         {
             ImGui.BeginChild(title, size, showBorder,
-                ImGuiWindowFlags.HorizontalScrollbar 
-                | ImGuiWindowFlags.AlwaysHorizontalScrollbar 
+                ImGuiWindowFlags.HorizontalScrollbar
+                | ImGuiWindowFlags.AlwaysHorizontalScrollbar
                 | ImGuiWindowFlags.NoMove);
         }
 
@@ -232,7 +235,8 @@ public class TextEditor
     public Coordinates SelectionStart
     {
         get => _state.SelectionStart;
-        set {
+        set
+        {
             _state.SelectionStart = SanitizeCoordinates(value);
             if (_state.SelectionStart > _state.SelectionEnd)
                 (_state.SelectionStart, _state.SelectionEnd) = (_state.SelectionEnd, _state.SelectionStart);
@@ -529,7 +533,7 @@ public class TextEditor
         var oldPos = _state.CursorPosition;
         CursorPosition = (_state.CursorPosition.Line, GetLineMaxColumn(oldPos.Line));
 
-        if (_state.CursorPosition == oldPos) 
+        if (_state.CursorPosition == oldPos)
             return;
 
         if (isSelecting)
@@ -1624,10 +1628,10 @@ public class TextEditor
         var click = ImGui.IsMouseClicked(0);
         var doubleClick = ImGui.IsMouseDoubleClicked(0);
         var t = ImGui.GetTime();
-        var tripleClick = 
-            click && 
-            !doubleClick && 
-            _lastClick != -1.0f 
+        var tripleClick =
+            click &&
+            !doubleClick &&
+            _lastClick != -1.0f
             && t - _lastClick < io.MouseDoubleClickTime;
 
         /* Left mouse button triple click */

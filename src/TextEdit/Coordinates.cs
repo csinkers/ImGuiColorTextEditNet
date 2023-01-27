@@ -1,3 +1,5 @@
+using System;
+
 namespace ImGuiColorTextEditNet;
 
 // Represents a character coordinate from the user's point of view,
