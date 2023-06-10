@@ -22,7 +22,7 @@ public static class Program
 
         var gdOptions = new GraphicsDeviceOptions(
             true,
-            PixelFormat.R32_Float,
+            PixelFormat.D24_UNorm_S8_UInt,
             true,
             ResourceBindingModel.Improved,
             true,
@@ -47,8 +47,7 @@ public static class Program
 
         var editor = new TextEditor
         {
-            SyntaxHighlighter = new CStyleHighlighter(true),
-            Text = @"#include <stdio.h>
+            AllText = @"#include <stdio.h>
 
 void main(int argc, char **argv) {
 	printf(""Hello world!\n"");
@@ -67,9 +66,9 @@ void main(int argc, char **argv) {
 }
 "
         };
-
-        editor.SetBreakpoints(new HashSet<int> { 10, 14 });
-        editor.SetErrorMarkers(new Dictionary<int, string> { { 16, "Syntax error etc" } });
+        editor.SyntaxHighlighter = new CStyleHighlighter(true);
+        editor.Breakpoints.SetBreakpoints(new HashSet<int> { 10, 14 });
+        editor.ErrorMarkers.SetErrorMarkers(new Dictionary<int, string> { { 16, "Syntax error etc" } });
 
         DateTime lastFrame = DateTime.Now;
         while (window.Exists)
@@ -80,13 +79,13 @@ void main(int argc, char **argv) {
 
             var thisFrame = DateTime.Now;
             imguiRenderer.Update((float)(thisFrame - lastFrame).TotalSeconds, input);
-            lastFrame=thisFrame;
+            lastFrame = thisFrame;
 
             ImGui.SetNextWindowPos(new Vector2(0, 0));
             ImGui.SetNextWindowSize(new Vector2(window.Width, window.Height));
             ImGui.Begin("Demo");
 
-            ImGui.Text($"Cur:{editor.CursorPosition} SEL: {editor.SelectionStart} - {editor.SelectionEnd}");
+            ImGui.Text($"Cur:{editor.CursorPosition} SEL: {editor.Selection.Start} - {editor.Selection.End}");
             editor.Render("EditWindow");
 
             ImGui.End();

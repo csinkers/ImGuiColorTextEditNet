@@ -22,7 +22,7 @@ public class BasicTests
     [TestMethod]
     public void SetTextTest()
     {
-        var t = new TextEditor { Text = "abc" };
+        var t = new TextEditor { AllText = "abc" };
 
         Assert.AreEqual("abc", t.Text);
         Assert.AreEqual(1, t.TotalLines);
@@ -37,7 +37,7 @@ public class BasicTests
     {
         const string text = @"abc
 def";
-        var t = new TextEditor { Text = text };
+        var t = new TextEditor { AllText = text };
         Assert.AreEqual(text, t.Text);
         Assert.AreEqual(2, t.TotalLines);
 
@@ -52,7 +52,7 @@ def";
     {
         const string text = @"abc
 ";
-        var t = new TextEditor { Text = text };
+        var t = new TextEditor { AllText = text };
         Assert.AreEqual(text, t.Text);
         Assert.AreEqual(2, t.TotalLines);
 
@@ -65,7 +65,7 @@ def";
     [TestMethod]
     public void SetTextEmptyTest()
     {
-        var t = new TextEditor { Text = "" };
+        var t = new TextEditor { AllText = "" };
         Assert.AreEqual("", t.Text);
         Assert.AreEqual(1, t.TotalLines);
 

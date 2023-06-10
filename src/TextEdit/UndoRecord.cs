@@ -12,8 +12,8 @@ class UndoRecord
     public Coordinates RemovedStart;
     public Coordinates RemovedEnd;
 
-    public EditorState Before;
-    public EditorState After;
+    public SelectionState Before;
+    public SelectionState After;
 
     public override string ToString()
     {
@@ -48,7 +48,7 @@ class UndoRecord
     public UndoRecord(
         string added, Coordinates addedStart, Coordinates addedEnd,
         string removed, Coordinates removedStart, Coordinates removedEnd,
-        EditorState before, EditorState after)
+        SelectionState before, SelectionState after)
     {
         Util.Assert(AddedStart <= AddedEnd);
         Util.Assert(RemovedStart <= RemovedEnd);

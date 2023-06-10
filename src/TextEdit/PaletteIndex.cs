@@ -22,5 +22,5 @@ public enum PaletteIndex : ushort
     CurrentLineFill,
     CurrentLineFillInactive,
     CurrentLineEdge,
-    Max
+    Custom // This index and any values higher than it are for custom user-controlled colors
 }
