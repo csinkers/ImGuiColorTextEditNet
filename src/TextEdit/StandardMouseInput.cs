@@ -20,6 +20,8 @@ public class StandardMouseInput : ITextEditorMouseInput
         if (!ImGui.IsWindowHovered())
             return;
 
+        ImGui.SetMouseCursor(ImGuiMouseCursor.TextInput);
+
         if (shift || alt)
             return;
 

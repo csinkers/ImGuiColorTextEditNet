@@ -45,9 +45,7 @@ public static class Program
             imguiRenderer.WindowResized(window.Width, window.Height);
         };
 
-        var editor = new TextEditor
-        {
-            AllText = @"#include <stdio.h>
+        var demoText = @"#include <stdio.h>
 
 void main(int argc, char **argv) {
 	printf(""Hello world!\n"");
@@ -64,11 +62,14 @@ void main(int argc, char **argv) {
 	int c = 0b110101;
     errors on this line!
 }
-"
-        };
+";
+
+        var editor = new TextEditor { AllText = demoText };
         editor.SyntaxHighlighter = new CStyleHighlighter(true);
-        editor.Breakpoints.SetBreakpoints(new HashSet<int> { 10, 14 });
-        editor.ErrorMarkers.SetErrorMarkers(new Dictionary<int, string> { { 16, "Syntax error etc" } });
+        var demoBreakpoints = new (int, object)[] { (10, ""), (14, "") };
+        var demoErrors = new Dictionary<int, object> { { 16, "Syntax error etc" } };
+        editor.Breakpoints.SetBreakpoints(demoBreakpoints);
+        editor.ErrorMarkers.SetErrorMarkers(demoErrors);
 
         DateTime lastFrame = DateTime.Now;
         while (window.Exists)
@@ -84,6 +85,13 @@ void main(int argc, char **argv) {
             ImGui.SetNextWindowPos(new Vector2(0, 0));
             ImGui.SetNextWindowSize(new Vector2(window.Width, window.Height));
             ImGui.Begin("Demo");
+
+            if (ImGui.Button("Reset"))
+            {
+                editor.AllText = demoText;
+                editor.Breakpoints.SetBreakpoints(demoBreakpoints);
+                editor.ErrorMarkers.SetErrorMarkers(demoErrors);
+            }
 
             ImGui.Text($"Cur:{editor.CursorPosition} SEL: {editor.Selection.Start} - {editor.Selection.End}");
             editor.Render("EditWindow");

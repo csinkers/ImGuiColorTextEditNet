@@ -5,7 +5,7 @@ namespace ImGuiColorTextEditNet.Editor;
 
 public class TextEditorBreakpoints
 {
-    HashSet<int> _breakpoints = new();
+    Dictionary<int, object> _breakpoints = new();
 
     internal TextEditorBreakpoints(TextEditorText text)
     {
@@ -15,33 +15,54 @@ public class TextEditorBreakpoints
         text.LinesRemoved += TextOnLinesRemoved;
     }
 
-    public bool IsLineBreakpoint(int lineNumber) => _breakpoints.Contains(lineNumber);
-    public void SetBreakpoints(IEnumerable<int> lines)
+    public event EventHandler<BreakpointRemovedEventArgs> BreakpointRemoved;
+    public bool IsLineBreakpoint(int lineNumber) => _breakpoints.ContainsKey(lineNumber);
+    public void SetBreakpoints(IEnumerable<(int, object)> breakpoints)
     {
         _breakpoints.Clear();
-        foreach (var line in lines)
-            _breakpoints.Add(line);
+        foreach (var (line, context) in breakpoints)
+            _breakpoints[line] = context;
+    }
+    public object? GetBreakpoint(int lineNumber)
+    {
+        _breakpoints.TryGetValue(lineNumber, out var value);
+        return value;
     }
 
     void TextOnLineAdded(int index)
     {
-        HashSet<int> btmp = new();
-        foreach (var i in _breakpoints)
-            btmp.Add(i >= index ? i + 1 : i);
-        _breakpoints = btmp;
+        Dictionary<int, object> newBreakpoints = new();
+        foreach (var kvp in _breakpoints)
+        {
+            int newIndex = kvp.Key >= index ? kvp.Key + 1 : kvp.Key;
+            newBreakpoints[newIndex] = kvp.Value;
+        }
+        _breakpoints = newBreakpoints;
     }
 
     void TextOnLinesRemoved(int start, int end)
     {
-        var btmp = new HashSet<int>();
+        var newBreakpoints = new Dictionary<int, object>();
         int lineCount = end - start + 1;
-        foreach (var i in _breakpoints)
+        foreach (var kvp in _breakpoints)
         {
+            var i = kvp.Key;
             if (i >= start && i <= end)
+            {
+                BreakpointRemoved?.Invoke(this, new BreakpointRemovedEventArgs(kvp.Value));
                 continue;
+            }
 
-            btmp.Add(i >= start ? i - lineCount : i);
+            var newIndex = i >= start ? i - lineCount : i;
+            newBreakpoints[newIndex] = kvp.Value;
         }
-        _breakpoints = btmp;
+
+        _breakpoints = newBreakpoints;
     }
+}
+
+public class BreakpointRemovedEventArgs : EventArgs
+{
+    public BreakpointRemovedEventArgs(object context) => Context = context;
+    public object Context { get; }
 }

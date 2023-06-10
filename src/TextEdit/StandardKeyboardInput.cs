@@ -7,6 +7,7 @@ public class StandardKeyboardInput : ITextEditorKeyboardInput
 {
     readonly TextEditor _editor;
     public StandardKeyboardInput(TextEditor editor) => _editor = editor ?? throw new ArgumentNullException(nameof(editor));
+    public bool ColemakMode { get; set; } = true;
 
     public void HandleKeyboardInputs()
     {
@@ -17,10 +18,6 @@ public class StandardKeyboardInput : ITextEditorKeyboardInput
 
         if (!ImGui.IsWindowFocused())
             return;
-
-        if (ImGui.IsWindowHovered())
-            ImGui.SetMouseCursor(ImGuiMouseCursor.TextInput);
-        //ImGui.CaptureKeyboardFromApp(true);
 
         io.WantCaptureKeyboard = true;
         io.WantTextInput = true;
@@ -33,6 +30,7 @@ public class StandardKeyboardInput : ITextEditorKeyboardInput
                 case (true, false, false)  when ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.Y)): _editor.UndoStack.Redo(); break;
                 case (false, false, false) when ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.Delete)): _editor.Modify.Delete(); break;
                 case (false, false, false) when ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.Backspace)): _editor.Modify.Backspace(); break;
+                case (false, false, false) when ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.CapsLock)): if (ColemakMode) _editor.Modify.Backspace(); break;
                 case (true, false, false)  when ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.V)): _editor.Modify.Paste(); break;
                 case (true, false, false)  when ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.X)): _editor.Modify.Cut(); break;
                 case (false, false, false) when ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.Enter)): _editor.Modify.EnterCharacter('\n'); break;

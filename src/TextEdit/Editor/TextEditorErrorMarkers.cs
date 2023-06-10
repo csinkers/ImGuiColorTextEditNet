@@ -5,7 +5,8 @@ namespace ImGuiColorTextEditNet.Editor;
 
 public class TextEditorErrorMarkers
 {
-    Dictionary<int, string> _errorMarkers = new();
+    Dictionary<int, object> _errorMarkers = new();
+    public Func<object, string> ErrorMarkerFormatter { get; set; } = x => x.ToString() ?? "";
 
     internal TextEditorErrorMarkers(TextEditorText text)
     {
@@ -17,22 +18,22 @@ public class TextEditorErrorMarkers
 
     void TextOnLineAdded(int index)
     {
-        var tempErrors = new Dictionary<int, string>(_errorMarkers.Count);
+        var tempErrors = new Dictionary<int, object>(_errorMarkers.Count);
         foreach (var i in _errorMarkers)
             tempErrors[i.Key >= index ? i.Key + 1 : i.Key] = i.Value;
         _errorMarkers = tempErrors;
     }
 
-    public void SetErrorMarkers(Dictionary<int, string> value)
+    public void SetErrorMarkers(Dictionary<int, object> value)
     {
         _errorMarkers.Clear();
-        foreach(var kvp in value)
+        foreach (var kvp in value)
             _errorMarkers[kvp.Key] = kvp.Value;
     }
 
     void _text_LinesRemoved(int start, int end)
     {
-        var tempErrors = new Dictionary<int, string>();
+        var tempErrors = new Dictionary<int, object>();
         int lineCount = end - start + 1;
         foreach (var kvp in _errorMarkers)
         {
@@ -45,6 +46,15 @@ public class TextEditorErrorMarkers
         _errorMarkers = tempErrors;
     }
 
-    public bool TryGetErrorForLine(int lineNo, out string? errorInfo) 
-        => _errorMarkers.TryGetValue(lineNo, out errorInfo);
+    public bool TryGetErrorForLine(int lineNo, out string errorInfo)
+    {
+        if (!_errorMarkers.TryGetValue(lineNo, out var error))
+        {
+            errorInfo = "";
+            return false;
+        }
+
+        errorInfo = ErrorMarkerFormatter(error);
+        return true;
+    }
 }
