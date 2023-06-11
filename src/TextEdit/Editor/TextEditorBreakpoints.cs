@@ -15,7 +15,7 @@ public class TextEditorBreakpoints
         text.LinesRemoved += TextOnLinesRemoved;
     }
 
-    public event EventHandler<BreakpointRemovedEventArgs> BreakpointRemoved;
+    public event EventHandler<BreakpointRemovedEventArgs>? BreakpointRemoved;
     public bool IsLineBreakpoint(int lineNumber) => _breakpoints.ContainsKey(lineNumber);
     public void Add(int lineNumber, object context) => _breakpoints[lineNumber] = context;
     public void SetBreakpoints(IEnumerable<(int, object)> breakpoints)

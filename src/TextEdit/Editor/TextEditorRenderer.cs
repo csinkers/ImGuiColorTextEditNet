@@ -66,8 +66,8 @@ public class TextEditorRenderer
         }
     }
 
-    public ITextEditorKeyboardInput KeyboardInput { get; init; }
-    public ITextEditorMouseInput MouseInput { get; init; }
+    public ITextEditorKeyboardInput? KeyboardInput { get; init; }
+    public ITextEditorMouseInput? MouseInput { get; init; }
     public bool IsImGuiChildIgnored { get; set; }
     public bool IsHandleMouseInputsEnabled { get; set; } = true;
     public bool IsHandleKeyboardInputsEnabled { get; set; } = true;
@@ -113,10 +113,10 @@ public class TextEditorRenderer
                 | ImGuiWindowFlags.NoMove);
         }
 
-        if (IsHandleKeyboardInputsEnabled)
+        if (IsHandleKeyboardInputsEnabled && KeyboardInput != null)
             KeyboardInput.HandleKeyboardInputs();
 
-        if (IsHandleMouseInputsEnabled)
+        if (IsHandleMouseInputsEnabled && MouseInput != null)
             MouseInput.HandleMouseInputs();
 
         _color.ColorizeIncremental();
