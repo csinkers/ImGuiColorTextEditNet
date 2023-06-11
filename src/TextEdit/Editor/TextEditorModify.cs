@@ -109,7 +109,7 @@ public class TextEditorModify
                 u.Removed = "\n";
                 u.RemovedStart = u.RemovedEnd = _selection.GetActualCursorCoordinates();
                 _text.Advance(u.RemovedEnd);
-                _text.AppendLine(pos.Line, _text.GetLineText(pos.Line + 1));
+                _text.AppendToLine(pos.Line, _text.GetLineText(pos.Line + 1));
                 _text.RemoveLine(pos.Line + 1);
             }
             else

@@ -17,6 +17,7 @@ public class TextEditorBreakpoints
 
     public event EventHandler<BreakpointRemovedEventArgs> BreakpointRemoved;
     public bool IsLineBreakpoint(int lineNumber) => _breakpoints.ContainsKey(lineNumber);
+    public void Add(int lineNumber, object context) => _breakpoints[lineNumber] = context;
     public void SetBreakpoints(IEnumerable<(int, object)> breakpoints)
     {
         _breakpoints.Clear();
@@ -29,6 +30,7 @@ public class TextEditorBreakpoints
         return value;
     }
 
+    internal object SerializeState() => _breakpoints;
     void TextOnLineAdded(int index)
     {
         Dictionary<int, object> newBreakpoints = new();
@@ -59,10 +61,4 @@ public class TextEditorBreakpoints
 
         _breakpoints = newBreakpoints;
     }
-}
-
-public class BreakpointRemovedEventArgs : EventArgs
-{
-    public BreakpointRemovedEventArgs(object context) => Context = context;
-    public object Context { get; }
 }

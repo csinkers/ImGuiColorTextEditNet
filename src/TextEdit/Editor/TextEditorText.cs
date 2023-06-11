@@ -234,6 +234,14 @@ internal class TextEditorText
         return result.Glyphs;
     }
 
+    internal void InsertLine(int lineNumber, string text, PaletteIndex color = PaletteIndex.Default)
+    {
+        var line = new Line(new List<Glyph>(text.Length));
+        foreach(var c in text)
+            line.Glyphs.Add(new Glyph(c, color));
+        InsertLine(lineNumber, line);
+    }
+
     internal void InsertLine(int lineNumber, Line line)
     {
         Util.Assert(!_options.IsReadOnly);
@@ -241,11 +249,11 @@ internal class TextEditorText
         LineAdded?.Invoke(lineNumber);
     }
 
-    internal void AppendLine(int lineNum, string text)
+    internal void AppendToLine(int lineNum, string text, PaletteIndex color = PaletteIndex.Default)
     {
         var line = _lines[lineNum];
         foreach (var c in text)
-            line.Glyphs.Add(new Glyph(c, PaletteIndex.Default));
+            line.Glyphs.Add(new Glyph(c, color));
     }
 
     internal void InsertCharAt(Coordinates pos, char c)

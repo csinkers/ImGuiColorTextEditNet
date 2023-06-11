@@ -16,19 +16,35 @@ public class TextEditorErrorMarkers
         text.LinesRemoved += _text_LinesRemoved;
     }
 
-    void TextOnLineAdded(int index)
+    public bool TryGetErrorForLine(int lineNo, out string errorInfo)
     {
-        var tempErrors = new Dictionary<int, object>(_errorMarkers.Count);
-        foreach (var i in _errorMarkers)
-            tempErrors[i.Key >= index ? i.Key + 1 : i.Key] = i.Value;
-        _errorMarkers = tempErrors;
+        if (!_errorMarkers.TryGetValue(lineNo, out var error))
+        {
+            errorInfo = "";
+            return false;
+        }
+
+        errorInfo = ErrorMarkerFormatter(error);
+        return true;
     }
+
+    public void Add(int lineNumber, int context) => _errorMarkers[lineNumber] = context;
 
     public void SetErrorMarkers(Dictionary<int, object> value)
     {
         _errorMarkers.Clear();
         foreach (var kvp in value)
             _errorMarkers[kvp.Key] = kvp.Value;
+    }
+
+    internal object SerializeState() => _errorMarkers;
+
+    void TextOnLineAdded(int index)
+    {
+        var tempErrors = new Dictionary<int, object>(_errorMarkers.Count);
+        foreach (var i in _errorMarkers)
+            tempErrors[i.Key >= index ? i.Key + 1 : i.Key] = i.Value;
+        _errorMarkers = tempErrors;
     }
 
     void _text_LinesRemoved(int start, int end)
@@ -44,17 +60,5 @@ public class TextEditorErrorMarkers
             tempErrors[key] = kvp.Value;
         }
         _errorMarkers = tempErrors;
-    }
-
-    public bool TryGetErrorForLine(int lineNo, out string errorInfo)
-    {
-        if (!_errorMarkers.TryGetValue(lineNo, out var error))
-        {
-            errorInfo = "";
-            return false;
-        }
-
-        errorInfo = ErrorMarkerFormatter(error);
-        return true;
     }
 }

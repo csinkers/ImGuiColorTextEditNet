@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Numerics;
 using System.Text;
 using ImGuiNET;
@@ -9,7 +10,8 @@ public class TextEditorRenderer
 {
     const float LineSpacing = 1.0f;
     const int LeftMargin = 10;
-    static readonly Vector4 Magenta = new(1.0f, 0, 1.0f, 1.0f);
+    static readonly Vector4 MagentaVec4 = new(1.0f, 1.0f, 1.0f, 1.0f);
+    static readonly uint MagentaUInt = 0xff00ffff;
 
     // Note: if fonts / sizes can ever be changed the char width cache will need to be invalidated.
     readonly SimpleCache<char, float> _charWidthCache = new("char widths", x => ImGui.CalcTextSize(x.ToString()).X);
@@ -18,32 +20,41 @@ public class TextEditorRenderer
     readonly TextEditorText _text;
     readonly TextEditorColor _color;
     readonly TextEditorOptions _options;
+    readonly TextEditorBreakpoints _breakpoints;
+    readonly TextEditorErrorMarkers _errorMarkers;
     readonly StringBuilder _lineBuffer = new();
+    readonly List<uint> _palette = new();
 
     Vector2 _charAdvance;
     DateTime _startTime = DateTime.UtcNow;
     float _textStart = 20.0f; // position (in pixels) where a code line starts relative to the left of the TextEditor.
-    readonly TextEditorBreakpoints _breakpoints;
-    readonly TextEditorErrorMarkers _errorMarkers;
-    uint[] _palette;
-    uint[] _alphaPalette;
-    Vector4[] _vecPalette;
+    uint[]? _uintPalette;
+    Vector4[]? _vec4Palette;
     bool _paletteDirty;
     float _lastAlpha;
 
     public uint[] Palette
     {
-        get => _palette;
+        get => _palette.ToArray();
         set
         {
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
 
-            _palette = (uint[])value.Clone(); 
-            _alphaPalette = (uint[])value.Clone(); 
-            _vecPalette = new Vector4[value.Length];
+            _palette.Clear();
+            _palette.AddRange(value);
             _paletteDirty = true;
         }
+    }
+
+    public void SetColor(PaletteIndex color, uint abgr)
+    {
+        int index = (int)color;
+        while (_palette.Count <= index)
+            _palette.Add(MagentaUInt);
+
+        _palette[index] = abgr;
+        _paletteDirty = true;
     }
 
     public int PageSize
@@ -75,19 +86,23 @@ public class TextEditorRenderer
     }
 
     uint ColorUInt(PaletteIndex index) =>
-        (int)index > _alphaPalette.Length 
-            ? 0xff00ffff
-            : _alphaPalette[(int)index];
+        _uintPalette == null || (int)index >= _uintPalette.Length 
+            ? MagentaUInt
+            : _uintPalette[(int)index];
 
     Vector4 ColorVec(PaletteIndex index) =>
-        (int)index > _vecPalette.Length 
-            ? Magenta 
-            : _vecPalette[(int)index];
+        _vec4Palette == null || (int)index > _vec4Palette.Length 
+            ? MagentaVec4 
+            : _vec4Palette[(int)index];
 
 
     internal void Render(string title, Vector2 size, bool showBorder)
     {
-        ImGui.PushStyleColor(ImGuiCol.ChildBg, ColorVec(PaletteIndex.Background));
+        var background = _vec4Palette == null
+            ? ImGui.ColorConvertU32ToFloat4(_palette[(int)PaletteIndex.Background])
+            : ColorVec(PaletteIndex.Background);
+
+        ImGui.PushStyleColor(ImGuiCol.ChildBg, background);
         ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(0.0f, 0.0f));
 
         if (!IsImGuiChildIgnored)
@@ -140,12 +155,15 @@ public class TextEditorRenderer
         /* Update palette with the current alpha from style */
         if (_paletteDirty)
         {
+            _uintPalette = _palette.ToArray();
+            _vec4Palette = new Vector4[_palette.Count];
+
             for (int i = 0; i < Palette.Length; ++i)
             {
                 var color = ImGui.ColorConvertU32ToFloat4(_palette[i]);
                 color.W *= alpha;
-                _vecPalette[i] = color;
-                _alphaPalette[i] = ImGui.ColorConvertFloat4ToU32(color);
+                _vec4Palette[i] = color;
+                _uintPalette[i] = ImGui.ColorConvertFloat4ToU32(color);
             }
 
             _paletteDirty = false;

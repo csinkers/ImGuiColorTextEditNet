@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace ImGuiColorTextEditNet.Editor;
 
@@ -8,21 +9,24 @@ internal class TextEditorUndoStack
     readonly TextEditorOptions _options;
     readonly TextEditorText _text;
     readonly TextEditorColor _color;
+    readonly TextEditorSelection _selection;
 
     readonly List<UndoRecord> _undoBuffer = new();
     int _undoIndex;
 
-    internal TextEditorUndoStack(TextEditorText text, TextEditorColor color, TextEditorOptions options)
+    internal TextEditorUndoStack(TextEditorText text, TextEditorColor color, TextEditorOptions options, TextEditorSelection selection)
     {
         _text = text ?? throw new ArgumentNullException(nameof(text));
         _color = color ?? throw new ArgumentNullException(nameof(color));
         _options = options ?? throw new ArgumentNullException(nameof(options));
+        _selection = selection ?? throw new ArgumentNullException(nameof(selection));
+        _text.AllTextReplaced += Clear;
+    }
 
-        _text.AllTextReplaced += () =>
-        {
-            _undoBuffer.Clear();
-            _undoIndex = 0;
-        };
+    internal void Clear()
+    {
+        _undoBuffer.Clear();
+        _undoIndex = 0;
     }
 
     internal int UndoCount => _undoBuffer.Count; // Only for unit testing
@@ -73,6 +77,8 @@ internal class TextEditorUndoStack
         }
 
         _text.ScrollToCursor = true;
+        _selection.Select(record.Before.Start, record.Before.End);
+        _selection.Cursor = record.Before.Cursor;
     }
 
     void Redo(UndoRecord record)
@@ -91,5 +97,7 @@ internal class TextEditorUndoStack
         }
 
         _text.ScrollToCursor = true;
+        _selection.Select(record.After.Start, record.After.End);
+        _selection.Cursor = record.After.Cursor;
     }
 }

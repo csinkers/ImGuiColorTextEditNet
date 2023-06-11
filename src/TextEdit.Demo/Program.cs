@@ -64,12 +64,21 @@ void main(int argc, char **argv) {
 }
 ";
 
-        var editor = new TextEditor { AllText = demoText };
-        editor.SyntaxHighlighter = new CStyleHighlighter(true);
+        var editor = new TextEditor
+        {
+            AllText = demoText,
+            SyntaxHighlighter = new CStyleHighlighter(true)
+        };
+
         var demoBreakpoints = new (int, object)[] { (10, ""), (14, "") };
         var demoErrors = new Dictionary<int, object> { { 16, "Syntax error etc" } };
         editor.Breakpoints.SetBreakpoints(demoBreakpoints);
         editor.ErrorMarkers.SetErrorMarkers(demoErrors);
+
+        editor.SetColor(PaletteIndex.Custom, 0xff0000ff);
+        editor.SetColor(PaletteIndex.Custom + 1, 0xff00ffff);
+        editor.SetColor(PaletteIndex.Custom + 2, 0xffffffff);
+        editor.SetColor(PaletteIndex.Custom + 3, 0xff808080);
 
         DateTime lastFrame = DateTime.Now;
         while (window.Exists)
@@ -92,6 +101,11 @@ void main(int argc, char **argv) {
                 editor.Breakpoints.SetBreakpoints(demoBreakpoints);
                 editor.ErrorMarkers.SetErrorMarkers(demoErrors);
             }
+
+            ImGui.SameLine(); if (ImGui.Button("err line")) editor.AppendLine("Some error text", PaletteIndex.Custom);
+            ImGui.SameLine(); if (ImGui.Button("warn line")) editor.AppendLine("Some warning text", PaletteIndex.Custom + 1);
+            ImGui.SameLine(); if (ImGui.Button("info line")) editor.AppendLine("Some info text", PaletteIndex.Custom + 2);
+            ImGui.SameLine(); if (ImGui.Button("verbose line")) editor.AppendLine("Some debug text", PaletteIndex.Custom + 3);
 
             ImGui.Text($"Cur:{editor.CursorPosition} SEL: {editor.Selection.Start} - {editor.Selection.End}");
             editor.Render("EditWindow");

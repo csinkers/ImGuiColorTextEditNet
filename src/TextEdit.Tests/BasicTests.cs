@@ -11,7 +11,7 @@ public class BasicTests
     public void ConstructorTest()
     {
         var t = new TextEditor();
-        Assert.AreEqual("", t.Text);
+        Assert.AreEqual("", t.AllText);
         Assert.AreEqual(1, t.TotalLines);
 
         var lines = t.TextLines;
@@ -24,7 +24,7 @@ public class BasicTests
     {
         var t = new TextEditor { AllText = "abc" };
 
-        Assert.AreEqual("abc", t.Text);
+        Assert.AreEqual("abc", t.AllText);
         Assert.AreEqual(1, t.TotalLines);
 
         var lines = t.TextLines;
@@ -38,7 +38,7 @@ public class BasicTests
         const string text = @"abc
 def";
         var t = new TextEditor { AllText = text };
-        Assert.AreEqual(text, t.Text);
+        Assert.AreEqual(text, t.AllText);
         Assert.AreEqual(2, t.TotalLines);
 
         var lines = t.TextLines;
@@ -53,7 +53,7 @@ def";
         const string text = @"abc
 ";
         var t = new TextEditor { AllText = text };
-        Assert.AreEqual(text, t.Text);
+        Assert.AreEqual(text, t.AllText);
         Assert.AreEqual(2, t.TotalLines);
 
         var lines = t.TextLines;
@@ -66,7 +66,7 @@ def";
     public void SetTextEmptyTest()
     {
         var t = new TextEditor { AllText = "" };
-        Assert.AreEqual("", t.Text);
+        Assert.AreEqual("", t.AllText);
         Assert.AreEqual(1, t.TotalLines);
 
         var lines = t.TextLines;
@@ -79,7 +79,7 @@ def";
     {
         var t = new TextEditor { TextLines = new[] { "abc" } };
 
-        Assert.AreEqual("abc", t.Text);
+        Assert.AreEqual("abc", t.AllText);
         Assert.AreEqual(1, t.TotalLines);
 
         var lines = t.TextLines;
@@ -94,7 +94,7 @@ def";
 def";
         var t = new TextEditor { TextLines = new[] { "abc", "def" } };
 
-        Assert.AreEqual(text, t.Text);
+        Assert.AreEqual(text, t.AllText);
         Assert.AreEqual(2, t.TotalLines);
 
         var lines = t.TextLines;
@@ -107,7 +107,7 @@ def";
     public void SetTextLinesEmptyTest()
     {
         var t = new TextEditor { TextLines = Array.Empty<string>() };
-        Assert.AreEqual("", t.Text);
+        Assert.AreEqual("", t.AllText);
         Assert.AreEqual(1, t.TotalLines);
 
         var lines = t.TextLines;

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Numerics;
+using System.Text.Json;
 using ImGuiColorTextEditNet.Editor;
 
 // ReSharper disable MemberCanBePrivate.Global
@@ -14,7 +15,6 @@ public class TextEditor
     internal TextEditorUndoStack UndoStack { get; }
     internal TextEditorColor Color { get; }
     internal TextEditorText Text { get; }
-
     public TextEditorSelection Selection { get; }
     public TextEditorOptions Options { get; }
     public TextEditorBreakpoints Breakpoints { get; }
@@ -32,7 +32,7 @@ public class TextEditor
         ErrorMarkers =  new TextEditorErrorMarkers(Text);
         Color = new TextEditorColor(Options, Text);
         Movement = new TextEditorMovement(Selection, Text);
-        UndoStack = new TextEditorUndoStack(Text, Color, Options);
+        UndoStack = new TextEditorUndoStack(Text, Color, Options, Selection);
         Modify = new TextEditorModify(Selection, Text, UndoStack, Options, Color);
         Renderer = new TextEditorRenderer(this, Palettes.Dark)
         {
@@ -44,7 +44,22 @@ public class TextEditor
     public int TotalLines => Text.LineCount;
     public string AllText { get => Text.GetText((0, 0), (Text.LineCount, 0)); set => Text.SetText(value); }
     public IList<string> TextLines { get => Text.TextLines; set => Text.TextLines = value; }
+
+    public void AppendLine(string text)
+    {
+        UndoStack.Clear();
+        Text.InsertLine(Text.LineCount - 1, text);
+    }
+
+    public void AppendLine(string text, PaletteIndex color)
+    {
+        UndoStack.Clear();
+        UndoStack.Clear();
+        Text.InsertLine(Text.LineCount - 1, text, color);
+    }
+
     public ISyntaxHighlighter SyntaxHighlighter { get => Color.SyntaxHighlighter; set => Color.SyntaxHighlighter = value; }
+    public void SetColor(PaletteIndex color, uint abgr) => Renderer.SetColor(color, abgr);
     public int TabSize { get => Text.TabSize; set => Text.TabSize = value; }
 
     public string GetCurrentLineText()
@@ -72,5 +87,19 @@ public class TextEditor
     public void Redo() => UndoStack.Redo();
     public int UndoCount => UndoStack.UndoCount;
     public int UndoIndex => UndoStack.UndoIndex;
+
+    public string SerializeState()
+    {
+        var state = new
+        {
+            Options,
+            Selection = Selection.SerializeState(),
+            Breakpoints = Breakpoints.SerializeState(),
+            ErrorMarkers = ErrorMarkers.SerializeState(),
+            Text = TextLines,
+        };
+
+        return JsonSerializer.Serialize(state, new JsonSerializerOptions { WriteIndented = true });
+    }
 }
 

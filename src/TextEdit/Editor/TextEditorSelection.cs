@@ -48,6 +48,15 @@ public class TextEditorSelection
         }
     }
 
+    internal object SerializeState() =>
+        new
+        {
+            Cursor = Cursor.ToString(),
+            Start = Start.ToString(),
+            End = End.ToString(),
+            Mode,
+        };
+
     public void SelectWordUnderCursor() => Select(_text.FindWordStart(Cursor), _text.FindWordEnd(Cursor));
     public void SelectAll() => Select((0, 0), (_text.LineCount, 0));
     public bool HasSelection => End > Start;
