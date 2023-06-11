@@ -53,10 +53,10 @@ public class StandardKeyboardInput : ITextEditorKeyboardInput
             case (_, _, false)     when ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.RightArrow)): _editor.Movement.MoveRight(1, shift, ctrl); break;
             case (_, _, false)     when ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.PageUp)):     _editor.Movement.MoveUp(_editor.Renderer.PageSize - 4, shift); break;
             case (_, _, false)     when ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.PageDown)):   _editor.Movement.MoveDown(_editor.Renderer.PageSize - 4, shift); break;
-            case (true, _, false)  when ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.Home)):       _editor.Movement.MoveTop(shift); break;
-            case (true, _, false)  when ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.End)):        _editor.Movement.MoveBottom(shift); break;
-            case (false, _, false) when ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.Home)):       _editor.Movement.MoveHome(shift); break;
-            case (false, _, false) when ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.End)):        _editor.Movement.MoveEnd(shift); break;
+            case (true, _, false)  when ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.Home)):       _editor.Movement.MoveToStartOfFile(shift); break;
+            case (true, _, false)  when ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.End)):        _editor.Movement.MoveToEndOfFile(shift); break;
+            case (false, _, false) when ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.Home)):       _editor.Movement.MoveToStartOfLine(shift); break;
+            case (false, _, false) when ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.End)):        _editor.Movement.MoveToEndOfLine(shift); break;
             case (false, false, false) when ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.Insert)): _editor.Options.IsOverwrite = !_editor.Options.IsOverwrite; break;
             case (true, false, false)  when ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.C)):      _editor.Modify.Copy(); break;
             case (true, false, false)  when ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.A)):      _editor.Selection.SelectAll(); break;

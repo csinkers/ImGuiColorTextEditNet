@@ -172,7 +172,7 @@ public class TextEditorMovement
         _text.ScrollToCursor = true;
     }
 
-    public void MoveTop(bool isSelecting = false)
+    public void MoveToStartOfFile(bool isSelecting = false)
     {
         var oldPos = _selection.Cursor;
         _selection.Cursor = (0, 0);
@@ -190,7 +190,7 @@ public class TextEditorMovement
         }
     }
 
-    public void MoveBottom(bool isSelecting = false)
+    public void MoveToEndOfFile(bool isSelecting = false)
     {
         var oldPos = _selection.Cursor;
         var newPos = (_text.LineCount - 1, 0);
@@ -207,7 +207,7 @@ public class TextEditorMovement
         _selection.Select(_selection.InteractiveStart, _selection.InteractiveEnd);
     }
 
-    public void MoveHome(bool isSelecting = false)
+    public void MoveToStartOfLine(bool isSelecting = false)
     {
         var oldPos = _selection.Cursor;
         _selection.Cursor = (_selection.Cursor.Line, 0);
@@ -232,7 +232,7 @@ public class TextEditorMovement
         }
     }
 
-    public void MoveEnd(bool isSelecting = false)
+    public void MoveToEndOfLine(bool isSelecting = false)
     {
         var oldPos = _selection.Cursor;
         _selection.Cursor = (_selection.Cursor.Line, _text.GetLineMaxColumn(oldPos.Line));

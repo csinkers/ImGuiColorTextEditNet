@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Numerics;
 using System.Text.Json;
 using ImGuiColorTextEditNet.Editor;
+using ImGuiNET;
 
 // ReSharper disable MemberCanBePrivate.Global
 // ReSharper disable UnusedMember.Global
@@ -54,7 +55,6 @@ public class TextEditor
     public void AppendLine(string text, PaletteIndex color)
     {
         UndoStack.Clear();
-        UndoStack.Clear();
         Text.InsertLine(Text.LineCount - 1, text, color);
     }
 
@@ -100,6 +100,12 @@ public class TextEditor
         };
 
         return JsonSerializer.Serialize(state, new JsonSerializerOptions { WriteIndented = true });
+    }
+
+    public void ScrollToEnd()
+    {
+        Movement.MoveToEndOfFile();
+        Text.ScrollToCursor = true;
     }
 }
 
