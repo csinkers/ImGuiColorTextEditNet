@@ -129,9 +129,6 @@ public class TextEditorRenderer
             _text.ScrollToCursor = false;
         }
 
-        if (IsHandleKeyboardInputsEnabled)
-            ImGui.PopAllowKeyboardFocus();
-
         if (!IsImGuiChildIgnored)
             ImGui.EndChild();
 

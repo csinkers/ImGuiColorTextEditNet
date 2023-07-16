@@ -70,10 +70,6 @@ public class StandardKeyboardInput : ITextEditorKeyboardInput
                 if (c != 0 && c is '\n' or >= 32)
                     _editor.Modify.EnterCharacter((char)c);
             }
-
-            // io.InputQueueCharacters.resize(0); // TODO: Revisit
         }
-
-        ImGui.PushAllowKeyboardFocus(true);
     }
 }
