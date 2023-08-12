@@ -186,7 +186,7 @@ public class TextEditorModify
         _undo.AddUndo(u);
 
         _color.InvalidateColor(coord.Line - 1, 3);
-        _text.ScrollToCursor = true;
+        _text.PendingScrollRequest = coord.Line;
     }
 
     public void IndentSelection(bool shift)
@@ -273,7 +273,7 @@ public class TextEditorModify
             _selection.End = end;
             _undo.AddUndo(u);
 
-            _text.ScrollToCursor = true;
+            _text.PendingScrollRequest = end.Line;
         }
     }
     public void Backspace()
@@ -320,7 +320,7 @@ public class TextEditorModify
             u.Removed = _text.RemoveInLine(_selection.Cursor.Line, cindex, cindex + 1);
         }
 
-        _text.ScrollToCursor = true;
+        _text.PendingScrollRequest = _selection.Cursor.Line;
         _color.InvalidateColor(_selection.Cursor.Line, 1);
 
         u.After = _selection.State;

@@ -122,11 +122,12 @@ public class TextEditorRenderer
         _color.ColorizeIncremental();
         RenderInner();
 
-        if (_text.ScrollToCursor)
+        if (_text.PendingScrollRequest != null)
         {
-            EnsureCursorVisible();
+            if (_text.PendingScrollRequest.Value < _text.LineCount)
+                EnsurePositionVisible(new Coordinates(_text.PendingScrollRequest.Value, 0));
             ImGui.SetWindowFocus();
-            _text.ScrollToCursor = false;
+            _text.PendingScrollRequest = null;
         }
 
         if (!IsImGuiChildIgnored)
@@ -230,6 +231,16 @@ public class TextEditorRenderer
                         lineStartScreenPos.Y + _charAdvance.Y);
 
                     drawList.AddRectFilled(start, end, ColorUInt(PaletteIndex.Breakpoint));
+                }
+
+                if (lineNo == _selection.HighlightedLine)
+                {
+                    var end = new Vector2(
+                        lineStartScreenPos.X + contentSize.X + 2.0f * scrollX,
+                        lineStartScreenPos.Y + _charAdvance.Y);
+
+                    var color = ColorUInt(PaletteIndex.ExecutingLine);
+                    drawList.AddRectFilled(start, end, color);
                 }
 
                 // Draw error markers
@@ -422,7 +433,7 @@ public class TextEditorRenderer
         return distance;
     }
 
-    void EnsureCursorVisible()
+    void EnsurePositionVisible(Coordinates pos)
     {
         float scrollX = ImGui.GetScrollX();
         float scrollY = ImGui.GetScrollY();
@@ -436,7 +447,6 @@ public class TextEditorRenderer
         var left = (int)MathF.Ceiling(scrollX / _charAdvance.X);
         var right = (int)MathF.Ceiling((scrollX + width) / _charAdvance.X);
 
-        var pos = _selection.GetActualCursorCoordinates();
         var len = TextDistanceToLineStart(pos);
 
         if (pos.Line < top)

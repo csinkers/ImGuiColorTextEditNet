@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace ImGuiColorTextEditNet.Editor;
 
@@ -76,9 +75,9 @@ internal class TextEditorUndoStack
             _color.InvalidateColor(record.RemovedStart.Line - 1, record.RemovedEnd.Line - record.RemovedStart.Line + 2);
         }
 
-        _text.ScrollToCursor = true;
         _selection.Select(record.Before.Start, record.Before.End);
         _selection.Cursor = record.Before.Cursor;
+        _text.PendingScrollRequest = _selection.Cursor.Line;
     }
 
     void Redo(UndoRecord record)
@@ -96,8 +95,8 @@ internal class TextEditorUndoStack
             _color.InvalidateColor(record.AddedStart.Line - 1, record.AddedEnd.Line - record.AddedStart.Line + 1);
         }
 
-        _text.ScrollToCursor = true;
         _selection.Select(record.After.Start, record.After.End);
         _selection.Cursor = record.After.Cursor;
+        _text.PendingScrollRequest = _selection.Cursor.Line;
     }
 }

@@ -11,13 +11,13 @@ public class StandardKeyboardInput : ITextEditorKeyboardInput
 
     public void HandleKeyboardInputs()
     {
+        if (!ImGui.IsWindowFocused())
+            return;
+
         var io = ImGui.GetIO();
         var shift = io.KeyShift;
         var ctrl = io.ConfigMacOSXBehaviors ? io.KeySuper : io.KeyCtrl;
         var alt = io.ConfigMacOSXBehaviors ? io.KeyCtrl : io.KeyAlt;
-
-        if (!ImGui.IsWindowFocused())
-            return;
 
         io.WantCaptureKeyboard = true;
         io.WantTextInput = true;

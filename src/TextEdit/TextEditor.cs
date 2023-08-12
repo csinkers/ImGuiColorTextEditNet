@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Numerics;
 using System.Text.Json;
 using ImGuiColorTextEditNet.Editor;
-using ImGuiNET;
 
 // ReSharper disable MemberCanBePrivate.Global
 // ReSharper disable UnusedMember.Global
@@ -77,7 +76,7 @@ public class TextEditor
         {
             if (Selection.Cursor == value) return;
             Selection.Cursor = value;
-            Text.ScrollToCursor = true;
+            ScrollToLine(value.Line);
         }
     }
 
@@ -102,10 +101,6 @@ public class TextEditor
         return JsonSerializer.Serialize(state, new JsonSerializerOptions { WriteIndented = true });
     }
 
-    public void ScrollToEnd()
-    {
-        Movement.MoveToEndOfFile();
-        Text.ScrollToCursor = true;
-    }
+    public void ScrollToLine(int lineNumber) => Text.PendingScrollRequest = lineNumber;
 }
 

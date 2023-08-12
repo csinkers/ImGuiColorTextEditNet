@@ -18,27 +18,28 @@ public class TextEditorMovement
         var oldPos = _selection.Cursor;
         var newPos = _selection.Cursor;
         newPos.Line = Math.Max(0, _selection.Cursor.Line - amount);
-        if (oldPos != newPos)
-        {
-            _selection.Cursor = newPos;
-            if (isSelecting)
-            {
-                if (oldPos == _selection.InteractiveStart)
-                    _selection.InteractiveStart = _selection.Cursor;
-                else if (oldPos == _selection.InteractiveEnd)
-                    _selection.InteractiveEnd = _selection.Cursor;
-                else
-                {
-                    _selection.InteractiveStart = _selection.Cursor;
-                    _selection.InteractiveEnd = oldPos;
-                }
-            }
-            else
-                _selection.InteractiveStart = _selection.InteractiveEnd = _selection.Cursor;
 
-            _selection.Select(_selection.InteractiveStart, _selection.InteractiveEnd);
-            _text.ScrollToCursor = true;
+        if (oldPos == newPos)
+            return;
+
+        _selection.Cursor = newPos;
+        if (isSelecting)
+        {
+            if (oldPos == _selection.InteractiveStart)
+                _selection.InteractiveStart = _selection.Cursor;
+            else if (oldPos == _selection.InteractiveEnd)
+                _selection.InteractiveEnd = _selection.Cursor;
+            else
+            {
+                _selection.InteractiveStart = _selection.Cursor;
+                _selection.InteractiveEnd = oldPos;
+            }
         }
+        else
+            _selection.InteractiveStart = _selection.InteractiveEnd = _selection.Cursor;
+
+        _selection.Select(_selection.InteractiveStart, _selection.InteractiveEnd);
+        _text.PendingScrollRequest = _selection.Cursor.Line;
     }
 
     public void MoveDown(int amount = 1, bool isSelecting = false)
@@ -48,28 +49,28 @@ public class TextEditorMovement
         var newPos = _selection.Cursor;
         newPos.Line = Math.Max(0, Math.Min(_text.LineCount - 1, _selection.Cursor.Line + amount));
 
-        if (newPos != oldPos)
+        if (newPos == oldPos)
+            return;
+
+        _selection.Cursor = newPos;
+
+        if (isSelecting)
         {
-            _selection.Cursor = newPos;
-
-            if (isSelecting)
-            {
-                if (oldPos == _selection.InteractiveEnd)
-                    _selection.InteractiveEnd = _selection.Cursor;
-                else if (oldPos == _selection.InteractiveStart)
-                    _selection.InteractiveStart = _selection.Cursor;
-                else
-                {
-                    _selection.InteractiveStart = oldPos;
-                    _selection.InteractiveEnd = _selection.Cursor;
-                }
-            }
+            if (oldPos == _selection.InteractiveEnd)
+                _selection.InteractiveEnd = _selection.Cursor;
+            else if (oldPos == _selection.InteractiveStart)
+                _selection.InteractiveStart = _selection.Cursor;
             else
-                _selection.InteractiveStart = _selection.InteractiveEnd = _selection.Cursor;
-
-            _selection.Select(_selection.InteractiveStart, _selection.InteractiveEnd);
-            _text.ScrollToCursor = true;
+            {
+                _selection.InteractiveStart = oldPos;
+                _selection.InteractiveEnd = _selection.Cursor;
+            }
         }
+        else
+            _selection.InteractiveStart = _selection.InteractiveEnd = _selection.Cursor;
+
+        _selection.Select(_selection.InteractiveStart, _selection.InteractiveEnd);
+        _text.PendingScrollRequest = _selection.Cursor.Line;
     }
 
     public void MoveLeft(int amount = 1, bool isSelecting = false, bool isWordMode = false)
@@ -120,9 +121,9 @@ public class TextEditorMovement
         }
         else
             _selection.InteractiveStart = _selection.InteractiveEnd = _selection.Cursor;
-        _selection.Select(_selection.InteractiveStart, _selection.InteractiveEnd, isSelecting && isWordMode ? SelectionMode.Word : SelectionMode.Normal);
 
-        _text.ScrollToCursor = true;
+        _selection.Select(_selection.InteractiveStart, _selection.InteractiveEnd, isSelecting && isWordMode ? SelectionMode.Word : SelectionMode.Normal);
+        _text.PendingScrollRequest = _selection.Cursor.Line;
     }
 
     public void MoveRight(int amount = 1, bool isSelecting = false, bool isWordMode = false)
@@ -167,9 +168,9 @@ public class TextEditorMovement
         }
         else
             _selection.InteractiveStart = _selection.InteractiveEnd = _selection.Cursor;
-        _selection.Select(_selection.InteractiveStart, _selection.InteractiveEnd, isSelecting && isWordMode ? SelectionMode.Word : SelectionMode.Normal);
 
-        _text.ScrollToCursor = true;
+        _selection.Select(_selection.InteractiveStart, _selection.InteractiveEnd, isSelecting && isWordMode ? SelectionMode.Word : SelectionMode.Normal);
+        _text.PendingScrollRequest = _selection.Cursor.Line;
     }
 
     public void MoveToStartOfFile(bool isSelecting = false)
@@ -177,17 +178,19 @@ public class TextEditorMovement
         var oldPos = _selection.Cursor;
         _selection.Cursor = (0, 0);
 
-        if (_selection.Cursor != oldPos)
+        if (_selection.Cursor == oldPos)
+            return;
+
+        if (isSelecting)
         {
-            if (isSelecting)
-            {
-                _selection.InteractiveEnd = oldPos;
-                _selection.InteractiveStart = _selection.Cursor;
-            }
-            else
-                _selection.InteractiveStart = _selection.InteractiveEnd = _selection.Cursor;
-            _selection.Select(_selection.InteractiveStart, _selection.InteractiveEnd);
+            _selection.InteractiveEnd = oldPos;
+            _selection.InteractiveStart = _selection.Cursor;
         }
+        else
+            _selection.InteractiveStart = _selection.InteractiveEnd = _selection.Cursor;
+
+        _selection.Select(_selection.InteractiveStart, _selection.InteractiveEnd);
+        _text.PendingScrollRequest = _selection.Cursor.Line;
     }
 
     public void MoveToEndOfFile(bool isSelecting = false)
@@ -205,6 +208,7 @@ public class TextEditorMovement
             _selection.InteractiveStart = _selection.InteractiveEnd = newPos;
 
         _selection.Select(_selection.InteractiveStart, _selection.InteractiveEnd);
+        _text.PendingScrollRequest = _selection.Cursor.Line;
     }
 
     public void MoveToStartOfLine(bool isSelecting = false)
@@ -230,6 +234,8 @@ public class TextEditorMovement
                 _selection.InteractiveStart = _selection.InteractiveEnd = _selection.Cursor;
             _selection.Select(_selection.InteractiveStart, _selection.InteractiveEnd);
         }
+
+        _text.PendingScrollRequest = _selection.Cursor.Line;
     }
 
     public void MoveToEndOfLine(bool isSelecting = false)
@@ -256,5 +262,6 @@ public class TextEditorMovement
             _selection.InteractiveStart = _selection.InteractiveEnd = _selection.Cursor;
 
         _selection.Select(_selection.InteractiveStart, _selection.InteractiveEnd);
+        _text.PendingScrollRequest = _selection.Cursor.Line;
     }
 }

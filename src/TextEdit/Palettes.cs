@@ -13,8 +13,8 @@ public static class Palettes
         0xffaaaaaa, // Identifier
         0xff9bc64d, // Known identifier
         0xffc040a0, // Preproc identifier
-        0xff206020, // Comment (single line)
-        0xff406020, // Comment (multi line)
+        0xff50c050, // Comment (single line)
+        0xff70c050, // Comment (multi line)
         0xff101010, // Background
         0xffe0e0e0, // Cursor
         0x80a06020, // Selection
@@ -24,6 +24,7 @@ public static class Palettes
         0x40000000, // Current line fill
         0x40808080, // Current line fill (inactive)
         0x40a0a0a0, // Current line edge
+        0xa0a0a0a0, // Executing Line
     };
 
     public static readonly uint[] Light = {
@@ -48,6 +49,7 @@ public static class Palettes
         0x40000000, // Current line fill
         0x40808080, // Current line fill (inactive)
         0x40000000, // Current line edge
+        0xa0a0a0a0, // Executing Line
     };
 
     public static readonly uint[] RetroBlue = {
@@ -72,5 +74,6 @@ public static class Palettes
         0x40000000, // Current line fill
         0x40808080, // Current line fill (inactive)
         0x40000000, // Current line edge
+        0xa0a0a0a0, // Executing Line
     };
 }

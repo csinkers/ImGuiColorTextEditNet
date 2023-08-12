@@ -19,7 +19,7 @@ internal class TextEditorText
     }
 
     internal int LineCount => _lines.Count;
-    internal bool ScrollToCursor { get; set; }
+    internal int? PendingScrollRequest { get; set; }
 
     internal delegate void LineAddedHandler(int index);
     internal delegate void LinesRemovedHandler(int start, int end);

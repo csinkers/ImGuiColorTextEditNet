@@ -20,6 +20,7 @@ public class TextEditorSelection
     public string GetSelectedText() => _text.GetText(_state.Start, _state.End);
     internal Coordinates GetActualCursorCoordinates() => _text.SanitizeCoordinates(Cursor);
 
+    public int? HighlightedLine { get; set; }
     public Coordinates Cursor
     {
         get => _state.Cursor;
