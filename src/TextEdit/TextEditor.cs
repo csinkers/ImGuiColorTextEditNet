@@ -57,6 +57,12 @@ public class TextEditor
         Text.InsertLine(Text.LineCount - 1, text, color);
     }
 
+    public void AppendLine(Line line)
+    {
+        UndoStack.Clear();
+        Text.InsertLine(Text.LineCount - 1, line);
+    }
+
     public ISyntaxHighlighter SyntaxHighlighter { get => Color.SyntaxHighlighter; set => Color.SyntaxHighlighter = value; }
     public void SetColor(PaletteIndex color, uint abgr) => Renderer.SetColor(color, abgr);
     public int TabSize { get => Text.TabSize; set => Text.TabSize = value; }

@@ -9,9 +9,10 @@ public class Line
     public List<Glyph> Glyphs { get; init; }
     public Line() => Glyphs = new List<Glyph>();
     public Line(List<Glyph> glyphs) => Glyphs = glyphs ?? throw new ArgumentNullException(nameof(glyphs));
-    public void Append(StringBuilder sb)
+
+    public void Append(PaletteIndex color, string s)
     {
-        for (int j = 0; j < Glyphs.Count; ++j)
-            sb.Append(Glyphs[j].Char);
+        foreach(var c in s)
+            Glyphs.Add(new Glyph(c, color));
     }
 }

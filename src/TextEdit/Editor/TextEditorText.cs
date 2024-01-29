@@ -115,8 +115,12 @@ internal class TextEditorText
             var sb = new StringBuilder();
             for (int i = 0; i < _lines.Count; i++)
             {
+                var line = _lines[i];
                 sb.Clear();
-                _lines[i].Append(sb);
+
+                for (int j = 0; j < line.Glyphs.Count; ++j)
+                    sb.Append(line.Glyphs[j].Char);
+
                 result[i] = sb.ToString();
             }
 
