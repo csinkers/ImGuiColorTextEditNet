@@ -96,7 +96,7 @@ public class TextEditorRenderer
             : _vec4Palette[(int)index];
 
 
-    internal void Render(string title, Vector2 size, bool showBorder)
+    internal void Render(string title, Vector2 size)
     {
         var background = _vec4Palette == null
             ? ImGui.ColorConvertU32ToFloat4(_palette[(int)PaletteIndex.Background])
@@ -107,7 +107,8 @@ public class TextEditorRenderer
 
         if (!IsImGuiChildIgnored)
         {
-            ImGui.BeginChild(title, size, showBorder,
+            ImGui.BeginChild(title, size, 
+                ImGuiChildFlags.None,
                 ImGuiWindowFlags.HorizontalScrollbar
                 | ImGuiWindowFlags.AlwaysHorizontalScrollbar
                 | ImGuiWindowFlags.NoMove);

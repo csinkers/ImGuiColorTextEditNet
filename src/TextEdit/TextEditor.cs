@@ -86,8 +86,7 @@ public class TextEditor
         }
     }
 
-    public void Render(string title, Vector2 size = new(), bool showBorder = false)
-        => Renderer.Render(title, size, showBorder);
+    public void Render(string title, Vector2 size = new()) => Renderer.Render(title, size);
     public void Undo() => UndoStack.Undo();
     public void Redo() => UndoStack.Redo();
     public int UndoCount => UndoStack.UndoCount;
