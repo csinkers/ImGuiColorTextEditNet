@@ -14,8 +14,8 @@ public static class Program
         {
             X = 100,
             Y = 100,
-            WindowWidth = 480,
-            WindowHeight = 640,
+            WindowWidth = 960,
+            WindowHeight = 1280,
             WindowInitialState = WindowState.Normal,
             WindowTitle = "TextEdit.Test"
         };
@@ -81,6 +81,32 @@ void main(int argc, char **argv) {
         editor.SetColor(PaletteIndex.Custom + 3, 0xff808080);
 
         DateTime lastFrame = DateTime.Now;
+
+        var io = ImGui.GetIO();
+        ImFontPtr font;
+        unsafe
+        {
+            var nativeConfig = ImGuiNative.ImFontConfig_ImFontConfig();
+            nativeConfig->OversampleH = 8;
+            nativeConfig->OversampleV = 8;
+            nativeConfig->RasterizerMultiply = 1f;
+            nativeConfig->GlyphOffset = new Vector2(0);
+
+            font = io.Fonts.AddFontFromFileTTF(
+                @"C:\tmp\Font.ttf",
+                16, // size in pixels
+                nativeConfig);
+
+            io.Fonts.Build();
+
+            if (!font.IsLoaded())
+                throw new InvalidOperationException("Font could not be loaded");
+
+            imguiRenderer.RecreateFontDeviceTexture(gd);
+        }
+
+        io.FontGlobalScale = 2.0f;
+
         while (window.Exists)
         {
             var input = window.PumpEvents();
@@ -93,6 +119,7 @@ void main(int argc, char **argv) {
 
             ImGui.SetNextWindowPos(new Vector2(0, 0));
             ImGui.SetNextWindowSize(new Vector2(window.Width, window.Height));
+            ImGui.PushFont(font);
             ImGui.Begin("Demo");
 
             if (ImGui.Button("Reset"))
@@ -111,6 +138,7 @@ void main(int argc, char **argv) {
             editor.Render("EditWindow");
 
             ImGui.End();
+            ImGui.PopFont();
 
             cl.Begin();
             cl.SetFramebuffer(gd.MainSwapchain.Framebuffer);

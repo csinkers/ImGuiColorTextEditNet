@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Text;
@@ -10,6 +11,7 @@ public class TextEditorRenderer
 {
     const float LineSpacing = 1.0f;
     const int LeftMargin = 10;
+    const int CursorBlinkPeriodMs = 800;
     static readonly Vector4 MagentaVec4 = new(1.0f, 1.0f, 1.0f, 1.0f);
     static readonly uint MagentaUInt = 0xff00ffff;
 
@@ -171,7 +173,7 @@ public class TextEditorRenderer
         Util.Assert(_lineBuffer.Length == 0);
 
         var contentSize = ImGui.GetWindowContentRegionMax();
-        var drawList = ImGui.GetWindowDrawList();
+        ImDrawListPtr drawList = ImGui.GetWindowDrawList();
         float longest = _textStart;
 
         Vector2 cursorScreenPos = ImGui.GetCursorScreenPos();
@@ -297,7 +299,7 @@ public class TextEditorRenderer
                     {
                         var timeEnd = DateTime.UtcNow;
                         var elapsed = timeEnd - _startTime;
-                        if (elapsed.Milliseconds > 400)
+                        if (elapsed.Milliseconds > CursorBlinkPeriodMs / 2)
                         {
                             float width = 1.0f;
                             var cindex = _text.GetCharacterIndex(_selection.Cursor);
@@ -316,17 +318,18 @@ public class TextEditorRenderer
                                     width = _charWidthCache.Get(line[cindex].Char);
                                 }
                             }
+
                             Vector2 cstart = lineStartScreenPos with { X = textScreenPos.X + cx };
                             Vector2 cend = new(textScreenPos.X + cx + width, lineStartScreenPos.Y + _charAdvance.Y);
                             drawList.AddRectFilled(cstart, cend, ColorUInt(PaletteIndex.Cursor));
-                            if (elapsed.Milliseconds > 800)
+                            if (elapsed.Milliseconds > CursorBlinkPeriodMs)
                                 _startTime = timeEnd;
                         }
                     }
                 }
 
                 // Render colorized text
-                var prevColor = line.Length == 0 ? ColorUInt(PaletteIndex.Default) : ColorUInt(line[0].ColorIndex);
+                uint prevColor = line.Length == 0 ? ColorUInt(PaletteIndex.Default) : ColorUInt(line[0].ColorIndex);
                 var bufferOffset = new Vector2();
 
                 for (int i = 0; i < line.Length;)
@@ -337,9 +340,7 @@ public class TextEditorRenderer
                     if ((color != prevColor || glyph.Char is '\t' or ' ') && _lineBuffer.Length != 0)
                     {
                         Vector2 newOffset = new(textScreenPos.X + bufferOffset.X, textScreenPos.Y + bufferOffset.Y);
-                        var lineText = _lineBuffer.ToString();
-                        drawList.AddText(newOffset, prevColor, lineText);
-                        var textSize = ImGui.CalcTextSize(lineText);
+                        var textSize = DrawText(drawList, newOffset, prevColor, _lineBuffer);
                         bufferOffset.X += textSize.X;
                         _lineBuffer.Clear();
                     }
@@ -387,7 +388,7 @@ public class TextEditorRenderer
                 if (_lineBuffer.Length != 0)
                 {
                     Vector2 newOffset = new(textScreenPos.X + bufferOffset.X, textScreenPos.Y + bufferOffset.Y);
-                    drawList.AddText(newOffset, prevColor, _lineBuffer.ToString());
+                    DrawText(drawList, newOffset, prevColor, _lineBuffer);
                     _lineBuffer.Clear();
                 }
 
@@ -411,6 +412,36 @@ public class TextEditorRenderer
         }
 
         ImGui.Dummy(new Vector2(longest + 2, globalLineMax * _charAdvance.Y));
+    }
+
+    static Vector2 DrawText(ImDrawListPtr drawList, Vector2 offset, uint color, StringBuilder sb)
+    {
+        char[]? tempArray = null;
+        if (sb.Length > 1024)
+            tempArray = ArrayPool<char>.Shared.Rent(sb.Length);
+
+        try
+        {
+            Span<char> temp = sb.Length > 1024
+                ? tempArray.AsSpan(0, sb.Length)
+                : stackalloc char[sb.Length];
+
+            int i = 0;
+
+            foreach (var chunk in sb.GetChunks())
+            {
+                chunk.Span.CopyTo(temp[i..]);
+                i += chunk.Length;
+            }
+
+            drawList.AddText(offset, color, temp);
+            return ImGui.CalcTextSize(temp);
+        }
+        finally
+        {
+            if (tempArray != null)
+                ArrayPool<char>.Shared.Return(tempArray);
+        }
     }
 
     float TextDistanceToLineStart(Coordinates position)
