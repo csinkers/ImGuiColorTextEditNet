@@ -40,8 +40,7 @@ public class TextEditorRenderer
         get => _palette.ToArray();
         set
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
 
             _palette.Clear();
             _palette.AddRange(value);
@@ -77,7 +76,7 @@ public class TextEditorRenderer
 
     internal TextEditorRenderer(TextEditor editor, uint[] palette)
     {
-        if (editor == null) throw new ArgumentNullException(nameof(editor));
+        ArgumentNullException.ThrowIfNull(editor);
         _selection = editor.Selection;
         _text = editor.Text;
         _breakpoints = editor.Breakpoints;
@@ -205,8 +204,8 @@ public class TextEditorRenderer
                 Coordinates lineEndCoord = new(lineNo, _text.GetLineMaxColumn(lineNo));
 
                 // Draw selection for the current line
-                float sstart = -1.0f;
-                float ssend = -1.0f;
+                float sstart = float.NegativeInfinity;
+                float ssend = float.NegativeInfinity;
 
                 Util.Assert(_selection.Start <= _selection.End);
                 if (_selection.Start <= lineEndCoord)
@@ -217,7 +216,7 @@ public class TextEditorRenderer
                 if (_selection.End.Line > lineNo)
                     ssend += _charAdvance.X;
 
-                if (sstart != -1 && ssend != -1 && sstart < ssend)
+                if (!float.IsNegativeInfinity(sstart) && !float.IsNegativeInfinity(ssend) && sstart < ssend)
                 {
                     Vector2 vstart = lineStartScreenPos with { X = lineStartScreenPos.X + _textStart + sstart };
                     Vector2 vend = new(lineStartScreenPos.X + _textStart + ssend, lineStartScreenPos.Y + _charAdvance.Y);

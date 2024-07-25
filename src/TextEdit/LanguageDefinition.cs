@@ -17,7 +17,7 @@ public class LanguageDefinition
 
     public LanguageDefinition(string name) => Name = name;
 
-    public static LanguageDefinition HLSL()
+    public static LanguageDefinition Hlsl()
     {
         LanguageDefinition langDef = new("HLSL")
         {
@@ -73,7 +73,7 @@ public class LanguageDefinition
         return langDef;
     }
 
-    public static LanguageDefinition GLSL()
+    public static LanguageDefinition Glsl()
     {
         LanguageDefinition langDef = new("GLSL")
         {
@@ -101,7 +101,7 @@ public class LanguageDefinition
         return langDef;
     }
 
-    public static LanguageDefinition SQL()
+    public static LanguageDefinition Sql()
     {
         LanguageDefinition langDef = new("SQL")
         {

@@ -1,5 +1,5 @@
-namespace ImGuiColorTextEditNet;
 /* TODO: Port to C# or replace w/ new code
+namespace ImGuiColorTextEditNet;
 public class RegexSyntaxHighlighter : ISyntaxHighlighter
 {
     static readonly object DefaultState = new();
