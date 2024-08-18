@@ -9,7 +9,7 @@ public class TextEditorBreakpoints
 
     internal TextEditorBreakpoints(TextEditorText text)
     {
-        if (text == null) throw new ArgumentNullException(nameof(text));
+        ArgumentNullException.ThrowIfNull(text);
         text.AllTextReplaced += () => _breakpoints.Clear();
         text.LineAdded += TextOnLineAdded;
         text.LinesRemoved += TextOnLinesRemoved;

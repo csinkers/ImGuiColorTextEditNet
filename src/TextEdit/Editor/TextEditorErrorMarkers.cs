@@ -10,7 +10,7 @@ public class TextEditorErrorMarkers
 
     internal TextEditorErrorMarkers(TextEditorText text)
     {
-        if (text == null) throw new ArgumentNullException(nameof(text));
+        ArgumentNullException.ThrowIfNull(text);
         text.AllTextReplaced += () => _errorMarkers.Clear();
         text.LineAdded += TextOnLineAdded;
         text.LinesRemoved += _text_LinesRemoved;
