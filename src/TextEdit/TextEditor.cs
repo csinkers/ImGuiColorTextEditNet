@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Text.Json;
@@ -56,6 +57,8 @@ public class TextEditor
         UndoStack.Clear();
         Text.InsertLine(Text.LineCount - 1, text, color);
     }
+
+    public void Append(ReadOnlySpan<char> text, PaletteIndex color) => Text.Append(text, color);
 
     public void AppendLine(Line line)
     {

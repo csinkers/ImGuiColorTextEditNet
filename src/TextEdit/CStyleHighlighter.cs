@@ -10,7 +10,6 @@ public class CStyleHighlighter : ISyntaxHighlighter
 
     record Identifier(PaletteIndex Color)
     {
-        public Coordinates Location = Coordinates.Invalid;
         public string Declaration = "";
     }
 

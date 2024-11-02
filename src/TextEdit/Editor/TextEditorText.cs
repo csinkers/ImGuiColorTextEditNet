@@ -597,4 +597,25 @@ internal class TextEditorText
 
         return at;
     }
+
+    public void Append(ReadOnlySpan<char> text, PaletteIndex color)
+    {
+        var line = _lines[^1];
+
+        foreach (var c in text)
+        {
+            if (c == '\r')
+                continue;
+
+            if (c == '\n')
+            {
+                line = new Line();
+                InsertLine(LineCount, line);
+            }
+            else
+            {
+                line.Glyphs.Add(new Glyph(c, color));
+            }
+        }
+    }
 }
