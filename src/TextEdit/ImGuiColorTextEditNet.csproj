@@ -12,7 +12,7 @@
     <PackageTags>imgui</PackageTags>
     <RepositoryUrl>https://github.com/csinkers/ImGuiColorTextEditNet</RepositoryUrl>
     <RepositoryType>Git</RepositoryType>
-    <Version>0.1.6</Version>
+    <Version>0.1.7</Version>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="ImGui.NET" Version="1.90.5.1" />
