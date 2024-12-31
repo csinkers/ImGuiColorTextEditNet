@@ -171,7 +171,7 @@ public class TextEditorRenderer
 
         Util.Assert(_lineBuffer.Length == 0);
 
-        var contentSize = ImGui.GetWindowContentRegionMax();
+        var contentSize = ImGui.GetContentRegionAvail();
         ImDrawListPtr drawList = ImGui.GetWindowDrawList();
         float longest = _textStart;
 
