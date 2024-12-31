@@ -22,27 +22,26 @@ public static class Program
 
         var gdOptions = new GraphicsDeviceOptions(
             true,
-            PixelFormat.D24_UNorm_S8_UInt,
+            null,
             true,
             ResourceBindingModel.Improved,
             true,
             true,
             false);
 
-        var window = VeldridStartup.CreateWindow(ref windowInfo);
-        var gd = VeldridStartup.CreateGraphicsDevice(window, gdOptions, GraphicsBackend.Direct3D11);
+        VeldridStartup.CreateWindowAndGraphicsDevice(
+            new WindowCreateInfo(50, 50, 1280, 720, WindowState.Normal, "Control"),
+            new GraphicsDeviceOptions(true, null, true, ResourceBindingModel.Improved, true, true),
+            out var window,
+            out var gd);
 
-        var imguiRenderer = new ImGuiRenderer(
-            gd,
-            gd.MainSwapchain.Framebuffer.OutputDescription,
-            (int)gd.MainSwapchain.Framebuffer.Width,
-            (int)gd.MainSwapchain.Framebuffer.Height);
+        var controller = new ImGuiController(gd, gd.MainSwapchain.Framebuffer.OutputDescription, window.Width, window.Height);
 
         var cl = gd.ResourceFactory.CreateCommandList();
         window.Resized += () =>
         {
             gd.ResizeMainWindow((uint)window.Width, (uint)window.Height);
-            imguiRenderer.WindowResized(window.Width, window.Height);
+            controller.WindowResized(window.Width, window.Height);
         };
 
         var demoText = @"#include <stdio.h>
@@ -92,17 +91,14 @@ void main(int argc, char **argv) {
             nativeConfig->RasterizerMultiply = 1f;
             nativeConfig->GlyphOffset = new Vector2(0);
 
-            font = io.Fonts.AddFontFromFileTTF(
-                @"C:\tmp\Font.ttf",
-                16, // size in pixels
-                nativeConfig);
+            var dir = Directory.GetCurrentDirectory();
+            font = io.Fonts.AddFontFromFileTTF(@"../../../../../SpaceMono-Regular.ttf",
+                       16, // size in pixels
+                       nativeConfig);
 
-            io.Fonts.Build();
-
-            if (!font.IsLoaded())
+            if (font.NativePtr == (ImFont *)0 )
                 throw new InvalidOperationException("Font could not be loaded");
-
-            imguiRenderer.RecreateFontDeviceTexture(gd);
+            controller.RecreateFontDeviceTexture();
         }
 
         io.FontGlobalScale = 2.0f;
@@ -114,7 +110,7 @@ void main(int argc, char **argv) {
                 break;
 
             var thisFrame = DateTime.Now;
-            imguiRenderer.Update((float)(thisFrame - lastFrame).TotalSeconds, input);
+            controller.Update((float)(thisFrame - lastFrame).TotalSeconds, input);
             lastFrame = thisFrame;
 
             ImGui.SetNextWindowPos(new Vector2(0, 0));
@@ -143,7 +139,7 @@ void main(int argc, char **argv) {
             cl.Begin();
             cl.SetFramebuffer(gd.MainSwapchain.Framebuffer);
             cl.ClearColorTarget(0, RgbaFloat.Black);
-            imguiRenderer.Render(gd, cl);
+            controller.Render(gd, cl);
             cl.End();
             gd.SubmitCommands(cl);
             gd.SwapBuffers(gd.MainSwapchain);
