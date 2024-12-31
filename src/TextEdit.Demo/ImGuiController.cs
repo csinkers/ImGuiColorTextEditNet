@@ -1,12 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Numerics;
+﻿using System.Numerics;
 using System.Reflection;
-using System.IO;
-using Veldrid;
 using System.Runtime.CompilerServices;
+using ImGuiNET;
+using Veldrid;
 
-namespace ImGuiNET
+namespace TextEdit.Demo
 {
     /// <summary>
     /// A modified version of Veldrid.ImGui's ImGuiRenderer.
@@ -14,41 +12,35 @@ namespace ImGuiNET
     /// </summary>
     public class ImGuiController : IDisposable
     {
-        private GraphicsDevice _gd;
-        private bool _frameBegun;
+        GraphicsDevice? _gd;
+        bool _frameBegun;
 
         // Veldrid objects
-        private DeviceBuffer _vertexBuffer;
-        private DeviceBuffer _indexBuffer;
-        private DeviceBuffer _projMatrixBuffer;
-        private Texture _fontTexture;
-        private TextureView _fontTextureView;
-        private Shader _vertexShader;
-        private Shader _fragmentShader;
-        private ResourceLayout _layout;
-        private ResourceLayout _textureLayout;
-        private Pipeline _pipeline;
-        private ResourceSet _mainResourceSet;
-        private ResourceSet _fontTextureResourceSet;
+        DeviceBuffer? _vertexBuffer;
+        DeviceBuffer? _indexBuffer;
+        DeviceBuffer? _projMatrixBuffer;
+        Texture? _fontTexture;
+        TextureView? _fontTextureView;
+        Shader? _vertexShader;
+        Shader? _fragmentShader;
+        ResourceLayout? _layout;
+        ResourceLayout? _textureLayout;
+        Pipeline? _pipeline;
+        ResourceSet? _mainResourceSet;
+        ResourceSet? _fontTextureResourceSet;
 
-        private IntPtr _fontAtlasID = (IntPtr)1;
-        private bool _controlDown;
-        private bool _shiftDown;
-        private bool _altDown;
-        private bool _winKeyDown;
+        readonly IntPtr _fontAtlasID = 1;
+        readonly Vector2 _scaleFactor = Vector2.One;
 
-        private int _windowWidth;
-        private int _windowHeight;
-        private Vector2 _scaleFactor = Vector2.One;
+        int _windowWidth;
+        int _windowHeight;
 
         // Image trackers
-        private readonly Dictionary<TextureView, ResourceSetInfo> _setsByView
-            = new Dictionary<TextureView, ResourceSetInfo>();
-        private readonly Dictionary<Texture, TextureView> _autoViewsByTexture
-            = new Dictionary<Texture, TextureView>();
-        private readonly Dictionary<IntPtr, ResourceSetInfo> _viewsById = new Dictionary<IntPtr, ResourceSetInfo>();
-        private readonly List<IDisposable> _ownedResources = new List<IDisposable>();
-        private int _lastAssignedID = 100;
+        readonly Dictionary<TextureView, ResourceSetInfo> _setsByView = new();
+        readonly Dictionary<Texture, TextureView> _autoViewsByTexture = new();
+        readonly Dictionary<IntPtr, ResourceSetInfo> _viewsById = new();
+        readonly List<IDisposable> _ownedResources = new();
+        int _lastAssignedID = 100;
 
         /// <summary>
         /// Constructs a new ImGuiController.
@@ -62,8 +54,7 @@ namespace ImGuiNET
             ImGui.CreateContext();
             var io = ImGui.GetIO();
             io.BackendFlags |= ImGuiBackendFlags.RendererHasVtxOffset;
-            io.ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard |
-                ImGuiConfigFlags.DockingEnable;
+            io.ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard | ImGuiConfigFlags.DockingEnable;
             io.Fonts.Flags |= ImFontAtlasFlags.NoBakedLines;
 
             // io.Fonts.AddFontFromFileTTF("/home/rob/dev/imgui.net/ImGui.NET-1.91.0.1/src/Test/arial.ttf", 50);
@@ -91,9 +82,9 @@ namespace ImGuiNET
             ResourceFactory factory = gd.ResourceFactory;
             _vertexBuffer = factory.CreateBuffer(new BufferDescription(10000, BufferUsage.VertexBuffer | BufferUsage.Dynamic));
             _vertexBuffer.Name = "ImGui.NET Vertex Buffer";
+
             _indexBuffer = factory.CreateBuffer(new BufferDescription(2000, BufferUsage.IndexBuffer | BufferUsage.Dynamic));
             _indexBuffer.Name = "ImGui.NET Index Buffer";
-            
 
             _projMatrixBuffer = factory.CreateBuffer(new BufferDescription(64, BufferUsage.UniformBuffer | BufferUsage.Dynamic));
             _projMatrixBuffer.Name = "ImGui.NET Projection Buffer";
@@ -103,29 +94,31 @@ namespace ImGuiNET
             _vertexShader = factory.CreateShader(new ShaderDescription(ShaderStages.Vertex, vertexShaderBytes, gd.BackendType == GraphicsBackend.Metal ? "VS" : "main"));
             _fragmentShader = factory.CreateShader(new ShaderDescription(ShaderStages.Fragment, fragmentShaderBytes, gd.BackendType == GraphicsBackend.Metal ? "FS" : "main"));
 
-            VertexLayoutDescription[] vertexLayouts = new VertexLayoutDescription[]
-            {
-                new VertexLayoutDescription(
+            VertexLayoutDescription[] vertexLayouts =
+            [
+                new(
                     new VertexElementDescription("in_position", VertexElementSemantic.Position, VertexElementFormat.Float2),
                     new VertexElementDescription("in_texCoord", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float2),
                     new VertexElementDescription("in_color", VertexElementSemantic.Color, VertexElementFormat.Byte4_Norm))
-            };
+            ];
 
             _layout = factory.CreateResourceLayout(new ResourceLayoutDescription(
                 new ResourceLayoutElementDescription("ProjectionMatrixBuffer", ResourceKind.UniformBuffer, ShaderStages.Vertex),
                 new ResourceLayoutElementDescription("MainSampler", ResourceKind.Sampler, ShaderStages.Fragment)));
+
             _textureLayout = factory.CreateResourceLayout(new ResourceLayoutDescription(
                 new ResourceLayoutElementDescription("MainTexture", ResourceKind.TextureReadOnly, ShaderStages.Fragment)));
 
-            GraphicsPipelineDescription pd = new GraphicsPipelineDescription(
+            var pd = new GraphicsPipelineDescription(
                 BlendStateDescription.SingleAlphaBlend,
                 new DepthStencilStateDescription(false, false, ComparisonKind.Always),
                 new RasterizerStateDescription(FaceCullMode.None, PolygonFillMode.Solid, FrontFace.Clockwise, false, true),
                 PrimitiveTopology.TriangleList,
                 new ShaderSetDescription(vertexLayouts, new[] { _vertexShader, _fragmentShader }),
-                new ResourceLayout[] { _layout, _textureLayout },
+                [_layout, _textureLayout],
                 outputDescription,
                 ResourceBindingModel.Default);
+
             _pipeline = factory.CreateGraphicsPipeline(ref pd);
 
             _mainResourceSet = factory.CreateResourceSet(new ResourceSetDescription(_layout,
@@ -154,11 +147,7 @@ namespace ImGuiNET
             return rsi.ImGuiBinding;
         }
 
-        private IntPtr GetNextImGuiBindingID()
-        {
-            int newID = _lastAssignedID++;
-            return (IntPtr)newID;
-        }
+        IntPtr GetNextImGuiBindingID() => Interlocked.Increment(ref _lastAssignedID);
 
         /// <summary>
         /// Gets or creates a handle for a texture to be drawn with ImGui.
@@ -166,7 +155,7 @@ namespace ImGuiNET
         /// </summary>
         public IntPtr GetOrCreateImGuiBinding(ResourceFactory factory, Texture texture)
         {
-            if (!_autoViewsByTexture.TryGetValue(texture, out TextureView textureView))
+            if (!_autoViewsByTexture.TryGetValue(texture, out TextureView? textureView))
             {
                 textureView = factory.CreateTextureView(texture);
                 _autoViewsByTexture.Add(texture, textureView);
@@ -183,7 +172,7 @@ namespace ImGuiNET
         {
             if (!_viewsById.TryGetValue(imGuiBinding, out ResourceSetInfo tvi))
             {
-                throw new InvalidOperationException("No registered ImGui binding with id " + imGuiBinding.ToString());
+                throw new InvalidOperationException("No registered ImGui binding with id " + imGuiBinding);
             }
 
             return tvi.ResourceSet;
@@ -203,7 +192,7 @@ namespace ImGuiNET
             _lastAssignedID = 100;
         }
 
-        private byte[] LoadEmbeddedShaderCode(ResourceFactory factory, string name, ShaderStages stage)
+        static byte[] LoadEmbeddedShaderCode(ResourceFactory factory, string name, ShaderStages stage)
         {
             switch (factory.BackendType)
             {
@@ -232,15 +221,20 @@ namespace ImGuiNET
             }
         }
 
-        private byte[] GetEmbeddedResourceBytes(string resourceName)
+        static byte[] GetEmbeddedResourceBytes(string resourceName)
         {
             Assembly assembly = typeof(ImGuiController).Assembly;
-            using (Stream s = assembly.GetManifestResourceStream(resourceName))
+            using Stream? s = assembly.GetManifestResourceStream(resourceName);
+
+            if (s == null)
             {
-                byte[] ret = new byte[s.Length];
-                s.Read(ret, 0, (int)s.Length);
-                return ret;
+                var allResources = string.Join(", ", assembly.GetManifestResourceNames());
+                throw new InvalidOperationException($"Could not find embedded resource {resourceName}, valid resources: {allResources}");
             }
+
+            byte[] ret = new byte[s.Length];
+            _ = s.Read(ret, 0, (int)s.Length);
+            return ret;
         }
 
         /// <summary>
@@ -248,11 +242,13 @@ namespace ImGuiNET
         /// </summary>
         public void RecreateFontDeviceTexture()
         {
+            if (_gd == null)
+                return;
+
             ImGuiIOPtr io = ImGui.GetIO();
             // Build
-            IntPtr pixels;
-            int width, height, bytesPerPixel;
-            io.Fonts.GetTexDataAsRGBA32(out pixels, out width, out height, out bytesPerPixel);
+            io.Fonts.GetTexDataAsRGBA32(out IntPtr pixels, out var width, out var height, out var bytesPerPixel);
+
             // Store our identifier
             io.Fonts.SetTexID(_fontAtlasID);
 
@@ -263,6 +259,7 @@ namespace ImGuiNET
                 1,
                 PixelFormat.R8_G8_B8_A8_UNorm,
                 TextureUsage.Sampled));
+
             _fontTexture.Name = "ImGui.NET Font Texture";
             _gd.UpdateTexture(
                 _fontTexture,
@@ -276,10 +273,11 @@ namespace ImGuiNET
                 1,
                 0,
                 0);
+
             _fontTextureView = _gd.ResourceFactory.CreateTextureView(_fontTexture);
+
             var factory = _gd.ResourceFactory;
-            if (_fontTextureResourceSet != null)
-                _fontTextureResourceSet.Dispose();
+            _fontTextureResourceSet?.Dispose();
             _fontTextureResourceSet = factory.CreateResourceSet(new ResourceSetDescription(_textureLayout, _fontTextureView));
 
             io.Fonts.ClearTexData();
@@ -307,9 +305,7 @@ namespace ImGuiNET
         public void Update(float deltaSeconds, InputSnapshot snapshot)
         {
             if (_frameBegun)
-            {
                 ImGui.Render();
-            }
 
             SetPerFrameImGuiData(deltaSeconds);
             UpdateImGuiInput(snapshot);
@@ -322,17 +318,18 @@ namespace ImGuiNET
         /// Sets per-frame data based on the associated window.
         /// This is called by Update(float).
         /// </summary>
-        private void SetPerFrameImGuiData(float deltaSeconds)
+        void SetPerFrameImGuiData(float deltaSeconds)
         {
             ImGuiIOPtr io = ImGui.GetIO();
             io.DisplaySize = new Vector2(
                 _windowWidth / _scaleFactor.X,
                 _windowHeight / _scaleFactor.Y);
+
             io.DisplayFramebufferScale = _scaleFactor;
             io.DeltaTime = deltaSeconds; // DeltaTime is in seconds.
         }
 
-        private bool TryMapKey(Key key, out ImGuiKey result)
+        bool TryMapKey(Key key, out ImGuiKey result)
         {
             ImGuiKey KeyToImGuiKeyShortcut(Key keyToConvert, Key startKey1, ImGuiKey startKey2)
             {
@@ -394,7 +391,7 @@ namespace ImGuiNET
             return result != ImGuiKey.None;
         }
 
-        private void UpdateImGuiInput(InputSnapshot snapshot)
+        void UpdateImGuiInput(InputSnapshot snapshot)
         {
             ImGuiIOPtr io = ImGui.GetIO();
             io.AddMousePosEvent(snapshot.MousePosition.X, snapshot.MousePosition.Y);
@@ -404,6 +401,7 @@ namespace ImGuiNET
             io.AddMouseButtonEvent(3, snapshot.IsMouseDown(MouseButton.Button1));
             io.AddMouseButtonEvent(4, snapshot.IsMouseDown(MouseButton.Button2));
             io.AddMouseWheelEvent(0f, snapshot.WheelDelta);
+
             for (int i = 0; i < snapshot.KeyCharPresses.Count; i++)
             {
                 io.AddInputCharacter(snapshot.KeyCharPresses[i]);
@@ -419,8 +417,13 @@ namespace ImGuiNET
             }
         }
 
-        private void RenderImDrawData(ImDrawDataPtr draw_data, GraphicsDevice gd, CommandList cl)
+        void RenderImDrawData(ImDrawDataPtr draw_data, GraphicsDevice gd, CommandList cl)
         {
+            if (_gd == null || _vertexBuffer == null || _indexBuffer == null)
+            {
+                return;
+            }
+
             uint vertexOffsetInVertices = 0;
             uint indexOffsetInElements = 0;
 
@@ -529,17 +532,17 @@ namespace ImGuiNET
         /// </summary>
         public void Dispose()
         {
-            _vertexBuffer.Dispose();
-            _indexBuffer.Dispose();
-            _projMatrixBuffer.Dispose();
-            _fontTexture.Dispose();
-            _fontTextureView.Dispose();
-            _vertexShader.Dispose();
-            _fragmentShader.Dispose();
-            _layout.Dispose();
-            _textureLayout.Dispose();
-            _pipeline.Dispose();
-            _mainResourceSet.Dispose();
+            _vertexBuffer?.Dispose();
+            _indexBuffer?.Dispose();
+            _projMatrixBuffer?.Dispose();
+            _fontTexture?.Dispose();
+            _fontTextureView?.Dispose();
+            _vertexShader?.Dispose();
+            _fragmentShader?.Dispose();
+            _layout?.Dispose();
+            _textureLayout?.Dispose();
+            _pipeline?.Dispose();
+            _mainResourceSet?.Dispose();
 
             foreach (IDisposable resource in _ownedResources)
             {
@@ -547,16 +550,10 @@ namespace ImGuiNET
             }
         }
 
-        private struct ResourceSetInfo
+        struct ResourceSetInfo(IntPtr imGuiBinding, ResourceSet resourceSet)
         {
-            public readonly IntPtr ImGuiBinding;
-            public readonly ResourceSet ResourceSet;
-
-            public ResourceSetInfo(IntPtr imGuiBinding, ResourceSet resourceSet)
-            {
-                ImGuiBinding = imGuiBinding;
-                ResourceSet = resourceSet;
-            }
+            public readonly IntPtr ImGuiBinding = imGuiBinding;
+            public readonly ResourceSet ResourceSet = resourceSet;
         }
     }
 }

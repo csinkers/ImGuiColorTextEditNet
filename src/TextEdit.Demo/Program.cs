@@ -15,7 +15,7 @@ public static class Program
             X = 100,
             Y = 100,
             WindowWidth = 960,
-            WindowHeight = 1280,
+            WindowHeight = 960,
             WindowInitialState = WindowState.Normal,
             WindowTitle = "TextEdit.Test"
         };
@@ -30,8 +30,8 @@ public static class Program
             false);
 
         VeldridStartup.CreateWindowAndGraphicsDevice(
-            new WindowCreateInfo(50, 50, 1280, 720, WindowState.Normal, "Control"),
-            new GraphicsDeviceOptions(true, null, true, ResourceBindingModel.Improved, true, true),
+            windowInfo,
+            gdOptions,
             out var window,
             out var gd);
 
@@ -92,9 +92,15 @@ void main(int argc, char **argv) {
             nativeConfig->GlyphOffset = new Vector2(0);
 
             var dir = Directory.GetCurrentDirectory();
-            font = io.Fonts.AddFontFromFileTTF(@"../../../../../SpaceMono-Regular.ttf",
-                       16, // size in pixels
-                       nativeConfig);
+            var fontPath = Path.Combine(dir, "SpaceMono-Regular.ttf");
+
+            if (!File.Exists(fontPath))
+                throw new FileNotFoundException("Could not find font file at " + fontPath);
+
+            font = io.Fonts.AddFontFromFileTTF(
+                    fontPath,
+                    16, // size in pixels
+                    nativeConfig);
 
             if (font.NativePtr == (ImFont *)0 )
                 throw new InvalidOperationException("Font could not be loaded");
@@ -144,5 +150,7 @@ void main(int argc, char **argv) {
             gd.SubmitCommands(cl);
             gd.SwapBuffers(gd.MainSwapchain);
         }
+
+        controller.DestroyDeviceObjects();
     }
 }

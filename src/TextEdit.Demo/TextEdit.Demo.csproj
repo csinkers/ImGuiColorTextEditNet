@@ -9,6 +9,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="SpaceMono-Regular.ttf" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="SpaceMono-Regular.ttf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\TextEdit\ImGuiColorTextEditNet.csproj" />
   </ItemGroup>
 
