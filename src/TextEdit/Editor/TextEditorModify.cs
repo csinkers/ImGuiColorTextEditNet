@@ -63,6 +63,12 @@ public class TextEditorModify
     {
         Util.Assert(!_options.IsReadOnly);
 
+        unsafe
+        {
+            if(ImGuiNative.igGetClipboardText() == null)
+                return;
+        }
+
         var clipText = ImGui.GetClipboardText();
         if (string.IsNullOrEmpty(clipText))
             return;
