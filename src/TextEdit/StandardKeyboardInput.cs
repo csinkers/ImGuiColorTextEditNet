@@ -3,12 +3,18 @@ using ImGuiNET;
 
 namespace ImGuiColorTextEditNet;
 
+/// <summary>Represents the standard keyboard input handling.</summary>
 public class StandardKeyboardInput : ITextEditorKeyboardInput
 {
     readonly TextEditor _editor;
+
+    /// <summary>Initializes a new instance of the <see cref="StandardKeyboardInput"/> class.</summary>
     public StandardKeyboardInput(TextEditor editor) => _editor = editor ?? throw new ArgumentNullException(nameof(editor));
+
+    /// <summary>Gets or sets a value indicating whether Colemak keyboard layout mode is enabled.</summary>
     public bool ColemakMode { get; set; } = false;
 
+    /// <summary>Handles keyboard inputs for the text editor.</summary>
     public void HandleKeyboardInputs()
     {
         if (!ImGui.IsWindowFocused())

@@ -2,6 +2,9 @@ using System;
 
 namespace ImGuiColorTextEditNet;
 
+/// <summary>
+/// A syntax highlighter for C and C++ style languages.
+/// </summary>
 public class CStyleHighlighter : ISyntaxHighlighter
 {
     static readonly object DefaultState = new();
@@ -13,6 +16,10 @@ public class CStyleHighlighter : ISyntaxHighlighter
         public string Declaration = "";
     }
 
+    /// <summary>
+    /// Creates a new instance of the CStyleHighlighter.
+    /// </summary>
+    /// <param name="useCpp">true for C++, false for C</param>
     public CStyleHighlighter(bool useCpp)
     {
         var language = useCpp ? CPlusPlus() : C();
@@ -35,14 +42,20 @@ public class CStyleHighlighter : ISyntaxHighlighter
         }
     }
 
+    /// <summary>Indicates whether the highlighter supports auto-indentation.</summary>
     public bool AutoIndentation => true;
+
+    /// <summary>The maximum number of lines that can be processed in a single frame.</summary>
     public int MaxLinesPerFrame => 1000;
+
+    /// <summary>Retrieves the tooltip for a given identifier.</summary>
     public string? GetTooltip(string id)
     {
         var info = _identifiers.Get(id);
         return info?.Declaration;
     }
 
+    /// <summary>Colorizes a line of text based on C/C++ syntax rules.</summary>
     public object Colorize(Span<Glyph> line, object? state)
     {
         for (int i = 0; i < line.Length;)

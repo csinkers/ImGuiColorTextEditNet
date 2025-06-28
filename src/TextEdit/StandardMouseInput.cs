@@ -3,13 +3,16 @@ using ImGuiNET;
 
 namespace ImGuiColorTextEditNet;
 
+/// <summary>Represents the standard mouse input handling.</summary>
 public class StandardMouseInput : ITextEditorMouseInput
 {
     readonly TextEditor _editor;
 
+    /// <summary>Initializes a new instance of the <see cref="StandardMouseInput"/> class.</summary>
     public StandardMouseInput(TextEditor editor) 
         => _editor = editor ?? throw new ArgumentNullException(nameof(editor));
 
+    /// <summary>Handles mouse inputs for the text editor.</summary>
     public void HandleMouseInputs()
     {
         var io = ImGui.GetIO();
@@ -28,7 +31,7 @@ public class StandardMouseInput : ITextEditorMouseInput
         var click = ImGui.IsMouseClicked(0);
         var doubleClick = ImGui.IsMouseDoubleClicked(0);
 
-        /* Left mouse button double click */
+        // Left mouse button double click
         if (doubleClick)
         {
             if (!ctrl)
@@ -38,7 +41,7 @@ public class StandardMouseInput : ITextEditorMouseInput
                 _editor.Selection.Select(_editor.Selection.InteractiveStart, _editor.Selection.InteractiveEnd, _editor.Selection.Mode);
             }
         }
-        else if (click) /* Left mouse button click */
+        else if (click) // Left mouse button click
         {
             _editor.Selection.Cursor = _editor.Selection.InteractiveStart = _editor.Selection.InteractiveEnd = _editor.Renderer.ScreenPosToCoordinates(ImGui.GetMousePos());
             _editor.Selection.Mode = ctrl ? SelectionMode.Word : SelectionMode.Normal;

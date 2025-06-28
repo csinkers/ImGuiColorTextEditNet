@@ -2,6 +2,7 @@ using System;
 
 namespace ImGuiColorTextEditNet.Editor;
 
+/// <summary>Provides methods for moving the cursor.</summary>
 public class TextEditorMovement
 {
     readonly TextEditorSelection _selection;
@@ -13,6 +14,7 @@ public class TextEditorMovement
         _text = text ?? throw new ArgumentNullException(nameof(text));
     }
 
+    /// <summary>Moves the cursor up by a specified amount of lines.</summary>
     public void MoveUp(int amount = 1, bool isSelecting = false)
     {
         var oldPos = _selection.Cursor;
@@ -42,6 +44,7 @@ public class TextEditorMovement
         _text.PendingScrollRequest = _selection.Cursor.Line;
     }
 
+    /// <summary>Moves the cursor down by a specified amount of lines.</summary>
     public void MoveDown(int amount = 1, bool isSelecting = false)
     {
         Util.Assert(_selection.Cursor.Column >= 0);
@@ -73,6 +76,7 @@ public class TextEditorMovement
         _text.PendingScrollRequest = _selection.Cursor.Line;
     }
 
+    /// <summary>Moves the cursor left by a specified amount of characters or words.</summary>
     public void MoveLeft(int amount = 1, bool isSelecting = false, bool isWordMode = false)
     {
         if (_text.LineCount == 0)
@@ -126,6 +130,7 @@ public class TextEditorMovement
         _text.PendingScrollRequest = _selection.Cursor.Line;
     }
 
+    /// <summary>Moves the cursor right by a specified amount of characters or words.</summary>
     public void MoveRight(int amount = 1, bool isSelecting = false, bool isWordMode = false)
     {
         var oldPos = _selection.Cursor;
@@ -173,6 +178,7 @@ public class TextEditorMovement
         _text.PendingScrollRequest = _selection.Cursor.Line;
     }
 
+    /// <summary>Moves the cursor to the start of the file, optionally selecting text from the previous position to the new position.</summary>
     public void MoveToStartOfFile(bool isSelecting = false)
     {
         var oldPos = _selection.Cursor;
@@ -193,6 +199,7 @@ public class TextEditorMovement
         _text.PendingScrollRequest = _selection.Cursor.Line;
     }
 
+    /// <summary>Moves the cursor to the end of the file, optionally selecting text from the previous position to the new position.</summary>
     public void MoveToEndOfFile(bool isSelecting = false)
     {
         var oldPos = _selection.Cursor;
@@ -211,6 +218,7 @@ public class TextEditorMovement
         _text.PendingScrollRequest = _selection.Cursor.Line;
     }
 
+    /// <summary>Moves the cursor to the start of the current line, optionally selecting text from the previous position to the new position.</summary>
     public void MoveToStartOfLine(bool isSelecting = false)
     {
         var oldPos = _selection.Cursor;
@@ -238,6 +246,7 @@ public class TextEditorMovement
         _text.PendingScrollRequest = _selection.Cursor.Line;
     }
 
+    /// <summary>Moves the cursor to the end of the current line, optionally selecting text from the previous position to the new position.</summary>
     public void MoveToEndOfLine(bool isSelecting = false)
     {
         var oldPos = _selection.Cursor;

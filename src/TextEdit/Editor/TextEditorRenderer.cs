@@ -7,6 +7,7 @@ using ImGuiNET;
 
 namespace ImGuiColorTextEditNet.Editor;
 
+/// <summary>Renders the text editor, handling the display of text, syntax highlighting, selection, and other visual elements.</summary>
 public class TextEditorRenderer
 {
     const float LineSpacing = 1.0f;
@@ -35,6 +36,7 @@ public class TextEditorRenderer
     bool _paletteDirty;
     float _lastAlpha;
 
+    /// <summary>Gets or sets the color palette used for syntax highlighting and other visual elements.</summary>
     public uint[] Palette
     {
         get => _palette.ToArray();
@@ -48,6 +50,7 @@ public class TextEditorRenderer
         }
     }
 
+    /// <summary>Sets the color for a specific palette index.</summary>
     public void SetColor(PaletteIndex color, uint abgr)
     {
         int index = (int)color;
@@ -58,6 +61,7 @@ public class TextEditorRenderer
         _paletteDirty = true;
     }
 
+    /// <summary>Gets the total height of the editor in lines.</summary>
     public int PageSize
     {
         get
@@ -67,11 +71,22 @@ public class TextEditorRenderer
         }
     }
 
+    /// <summary>The keyboard input handler.</summary>
     public ITextEditorKeyboardInput? KeyboardInput { get; init; }
+
+    /// <summary>The mouse input handler.</summary>
     public ITextEditorMouseInput? MouseInput { get; init; }
+
+    /// <summary>Indicates whether the ImGui child window should be ignored for input handling.</summary>
     public bool IsImGuiChildIgnored { get; set; }
+
+    /// <summary>Indicates whether mouse inputs should be handled by the editor.</summary>
     public bool IsHandleMouseInputsEnabled { get; set; } = true;
+
+    /// <summary>Indicates whether keyboard inputs should be handled by the editor.</summary>
     public bool IsHandleKeyboardInputsEnabled { get; set; } = true;
+
+    /// <summary>Indicates whether whitespace characters (spaces and tabs) should be made visible in the editor.</summary>
     public bool IsShowingWhitespace { get; set; } = true;
 
     internal TextEditorRenderer(TextEditor editor, uint[] palette)

@@ -2,21 +2,45 @@ using System.Collections.Generic;
 
 namespace ImGuiColorTextEditNet;
 
+/// <summary>Represents a language definition for syntax highlighting.</summary>
 public class LanguageDefinition
 {
+    /// <summary>The name of the language, used for identification and display purposes.</summary>
     public string Name;
-    public string[]? Keywords;
-    public string[]? Identifiers;
-    public string CommentStart = "/*";
-    public string CommentEnd = "*/";
-    public string SingleLineComment = "//";
-    public char PreprocChar = '#';
-    public bool AutoIndentation = true;
-    public bool CaseSensitive = true;
-    public List<(string, PaletteIndex)> TokenRegexStrings = new();
 
+    /// <summary>A list of keywords for the language, used for syntax highlighting.</summary>
+    public string[]? Keywords;
+
+    /// <summary>A list of identifiers for the language, which may include built-in functions, types, or other significant terms.</summary>
+    public string[]? Identifiers;
+
+    /// <summary>The start and end strings for multi-line comments, used for syntax highlighting.</summary>
+    public string CommentStart = "/*";
+
+    /// <summary>The end string for multi-line comments, used for syntax highlighting.</summary>
+    public string CommentEnd = "*/";
+
+    /// <summary>The string used for single-line comments, used for syntax highlighting.</summary>
+    public string SingleLineComment = "//";
+
+    /// <summary>The character used to denote preprocessor directives, such as `#include` or `#define`.</summary>
+    public char PreprocChar = '#';
+
+    /// <summary>Indicates whether the language supports auto-indentation, which can help with formatting code as it is typed.</summary>
+    public bool AutoIndentation = true;
+
+    /// <summary>Indicates whether the language is case-sensitive, affecting how keywords and identifiers are matched during syntax highlighting.</summary>
+    public bool CaseSensitive = true;
+
+    /// <summary>A list of regular expressions that define token patterns for syntax highlighting.</summary>
+    public List<(string, PaletteIndex)> TokenRegexStrings = []; // TODO: Actually use this
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="LanguageDefinition"/> class with the specified name.
+    /// </summary>
     public LanguageDefinition(string name) => Name = name;
 
+    /// <summary>Creates a predefined language definition for HLSL (High-Level Shading Language).</summary>
     public static LanguageDefinition Hlsl()
     {
         LanguageDefinition langDef = new("HLSL")
@@ -73,6 +97,7 @@ public class LanguageDefinition
         return langDef;
     }
 
+    /// <summary>Creates a predefined language definition for GLSL (OpenGL Shading Language).</summary>
     public static LanguageDefinition Glsl()
     {
         LanguageDefinition langDef = new("GLSL")
@@ -101,6 +126,7 @@ public class LanguageDefinition
         return langDef;
     }
 
+    /// <summary>Creates a predefined language definition for SQL (Structured Query Language).</summary>
     public static LanguageDefinition Sql()
     {
         LanguageDefinition langDef = new("SQL")
@@ -145,6 +171,7 @@ public class LanguageDefinition
         return langDef;
     }
 
+    /// <summary>Creates a predefined language definition for Lua</summary>
     public static LanguageDefinition Lua()
     {
         LanguageDefinition langDef = new("Lua")

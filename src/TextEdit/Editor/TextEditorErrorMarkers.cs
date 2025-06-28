@@ -3,9 +3,12 @@ using System.Collections.Generic;
 
 namespace ImGuiColorTextEditNet.Editor;
 
+/// <summary>Manages error markers.</summary>
 public class TextEditorErrorMarkers
 {
     Dictionary<int, object> _errorMarkers = new();
+
+    /// <summary>Formatter for error markers, which converts the error context to a string representation.</summary>
     public Func<object, string> ErrorMarkerFormatter { get; set; } = x => x.ToString() ?? "";
 
     internal TextEditorErrorMarkers(TextEditorText text)
@@ -16,6 +19,7 @@ public class TextEditorErrorMarkers
         text.LinesRemoved += _text_LinesRemoved;
     }
 
+    /// <summary>Retrieves the error marker for the specified line number (if any).</summary>
     public bool TryGetErrorForLine(int lineNo, out string errorInfo)
     {
         if (!_errorMarkers.TryGetValue(lineNo, out var error))
@@ -28,8 +32,10 @@ public class TextEditorErrorMarkers
         return true;
     }
 
+    /// <summary>Adds an error marker at the specified line number with the given context.</summary>
     public void Add(int lineNumber, int context) => _errorMarkers[lineNumber] = context;
 
+    /// <summary>Sets the error markers, replacing any existing markers.</summary>
     public void SetErrorMarkers(Dictionary<int, object> value)
     {
         _errorMarkers.Clear();

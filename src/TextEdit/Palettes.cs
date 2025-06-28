@@ -1,8 +1,13 @@
 namespace ImGuiColorTextEditNet;
 
+/// <summary>
+/// Built-in color schemes
+/// </summary>
 public static class Palettes
 {
-    public static readonly uint[] Dark = {
+    /// <summary>Default dark theme</summary>
+    public static readonly uint[] Dark =
+    [
         0xff7f7f7f, // Default
         0xffd69c56, // Keyword
         0xff00ff00, // Number
@@ -24,10 +29,12 @@ public static class Palettes
         0x40000000, // Current line fill
         0x40808080, // Current line fill (inactive)
         0x40a0a0a0, // Current line edge
-        0xa0a0a0a0, // Executing Line
-    };
+        0xa0a0a0a0 // Executing Line
+    ];
 
-    public static readonly uint[] Light = {
+    /// <summary>Default light theme</summary>
+    public static readonly uint[] Light =
+    [
         0xff7f7f7f, // None
         0xffff0c06, // Keyword
         0xff008000, // Number
@@ -49,10 +56,12 @@ public static class Palettes
         0x40000000, // Current line fill
         0x40808080, // Current line fill (inactive)
         0x40000000, // Current line edge
-        0xa0a0a0a0, // Executing Line
-    };
+        0xa0a0a0a0 // Executing Line
+    ];
 
-    public static readonly uint[] RetroBlue = {
+    /// <summary>Default blue theme</summary>
+    public static readonly uint[] RetroBlue =
+    [
         0xff00ffff, // None
         0xffffff00, // Keyword
         0xff00ff00, // Number
@@ -74,6 +83,6 @@ public static class Palettes
         0x40000000, // Current line fill
         0x40808080, // Current line fill (inactive)
         0x40000000, // Current line edge
-        0xa0a0a0a0, // Executing Line
-    };
+        0xa0a0a0a0 // Executing Line
+    ];
 }

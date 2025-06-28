@@ -4,6 +4,7 @@ using ImGuiNET;
 
 namespace ImGuiColorTextEditNet.Editor;
 
+/// <summary>Provides methods for modifying text, e.g. copy, cut, paste, delete, and character entry.</summary>
 public class TextEditorModify
 {
     readonly SimpleCache<char, string> _charLabelCache = new("char strings", x => x.ToString());
@@ -22,6 +23,7 @@ public class TextEditorModify
         _color = color ?? throw new ArgumentNullException(nameof(color));
     }
 
+    /// <summary>Copies the currently selected text to the clipboard.</summary>
     public void Copy()
     {
         if (_selection.HasSelection)
@@ -43,6 +45,7 @@ public class TextEditorModify
         }
     }
 
+    /// <summary>Cuts the currently selected text, copying it to the clipboard and removing it from the editor.</summary>
     public void Cut()
     {
         if (_options.IsReadOnly)
@@ -59,6 +62,7 @@ public class TextEditorModify
         _undo.AddUndo(undo);
     }
 
+    /// <summary>Pastes text from the clipboard into the editor at the current cursor position or replaces the selection if any exists.</summary>
     public void Paste()
     {
         Util.Assert(!_options.IsReadOnly);
@@ -87,6 +91,7 @@ public class TextEditorModify
         _undo.AddUndo(u);
     }
 
+    /// <summary>Deletes the currently selected text or the character at the cursor position if no selection exists.</summary>
     public void Delete()
     {
         if (_options.IsReadOnly)
@@ -134,6 +139,7 @@ public class TextEditorModify
         }
     }
 
+    /// <summary>Inserts a character at the current cursor position or replaces the selection if any exists.</summary>
     public void EnterCharacter(char c)
     {
         Util.Assert(!_options.IsReadOnly);
@@ -195,6 +201,7 @@ public class TextEditorModify
         _text.PendingScrollRequest = coord.Line;
     }
 
+    /// <summary>Indents or unindents the selected lines based on the current tab size.</summary>
     public void IndentSelection(bool shift)
     {
         Util.Assert(!_options.IsReadOnly);
@@ -212,8 +219,10 @@ public class TextEditorModify
         // end._column = end._line < _text.LineCount ? _state._lines[end._line].Count : 0;
         if (end.Column == 0 && end.Line > 0)
             --end.Line;
+
         if (end.Line >= _text.LineCount)
             end.Line = _text.LineCount == 0 ? 0 : _text.LineCount - 1;
+
         end.Column = _text.GetLineMaxColumn(end.Line);
 
         //if (end._column >= GetLineMaxColumn(end._line))
@@ -282,6 +291,7 @@ public class TextEditorModify
             _text.PendingScrollRequest = end.Line;
         }
     }
+    /// <summary>Deletes the character before the cursor position or the selected text if any exists.</summary>
     public void Backspace()
     {
         Util.Assert(!_options.IsReadOnly);
