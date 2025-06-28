@@ -10,7 +10,7 @@ public class DeletionTests
     [TestMethod] public void BackspaceTestBp() => BackspaceTestInner(true, false);
     [TestMethod] public void BackspaceTestErr() => BackspaceTestInner(false, true);
 
-    void BackspaceTestInner(bool breakpoints, bool errors)
+    static void BackspaceTestInner(bool breakpoints, bool errors)
     {
         var t = new TextEditor { AllText = "abc" };
         if (breakpoints) t.Breakpoints.Add(0, 1);
@@ -37,7 +37,7 @@ public class DeletionTests
 
     [TestMethod] public void BackspaceTestMultiLine1() => BackspaceTestMultiLine1Inner(false, false);
 
-    void BackspaceTestMultiLine1Inner(bool breakpoints, bool errors)
+    static void BackspaceTestMultiLine1Inner(bool breakpoints, bool errors)
     {
         var before = @"one
 two
@@ -62,7 +62,7 @@ three";
 
     [TestMethod] public void BackspaceTestMultiLine2() => BackspaceTestMultiLine2Inner(false, false);
 
-    public void BackspaceTestMultiLine2Inner(bool breakpoints, bool errors)
+    static void BackspaceTestMultiLine2Inner(bool breakpoints, bool errors)
     {
         var before = @"one
 two
@@ -88,7 +88,7 @@ three";
 
     [TestMethod] public void DeleteTest() => DeleteTestInner(false, false);
 
-    void DeleteTestInner(bool breakpoints, bool errors)
+    static void DeleteTestInner(bool breakpoints, bool errors)
     {
         var t = new TextEditor { AllText = "abc" };
         if (breakpoints) t.Breakpoints.Add(0, 1);

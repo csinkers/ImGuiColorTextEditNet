@@ -11,7 +11,7 @@ public class InsertionTests
     [TestMethod] public void InsertTest1Bp() => InsertTest1Inner(true, false);
     [TestMethod] public void InsertTest1Err() => InsertTest1Inner(false, true);
 
-    void InsertTest1Inner(bool breakpoints, bool errors)
+    static void InsertTest1Inner(bool breakpoints, bool errors)
     {
         var t = new TextEditor();
         if (breakpoints) t.Breakpoints.Add(0, 1);
@@ -42,7 +42,7 @@ public class InsertionTests
     [TestMethod] public void InsertNewLineBp() => InsertNewLineInner(true, false);
     [TestMethod] public void InsertNewLineErr() => InsertNewLineInner(false, true);
 
-    void InsertNewLineInner(bool breakpoints, bool errors)
+    static void InsertNewLineInner(bool breakpoints, bool errors)
     {
         var t = new TextEditor();
         if (breakpoints) t.Breakpoints.Add(0, 1);
@@ -73,7 +73,7 @@ public class InsertionTests
     [TestMethod] public void IndentBlockTestBp() => IndentBlockTestInner(true, false);
     [TestMethod] public void IndentBlockTestErr() => IndentBlockTestInner(false, true);
 
-    void IndentBlockTestInner(bool breakpoints, bool errors)
+    static void IndentBlockTestInner(bool breakpoints, bool errors)
     {
         var tab = "\t";
         var before = $@"void main() // 0
