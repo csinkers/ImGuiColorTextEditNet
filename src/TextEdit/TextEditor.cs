@@ -131,7 +131,9 @@ public class TextEditor
         {
             if (Selection.Cursor == value)
                 return;
+
             Selection.Cursor = value;
+            Selection.Select(value, value);
             ScrollToLine(value.Line);
         }
     }

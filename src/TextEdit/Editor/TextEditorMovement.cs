@@ -172,9 +172,10 @@ public class TextEditorMovement
             else
             {
                 cindex++;
-                _selection.Cursor = (lindex, _text.GetCharacterColumn(lindex, cindex));
-                if (isWordMode)
-                    _selection.Cursor = _text.FindNextWord(_selection.Cursor);
+
+                _selection.Cursor = isWordMode
+                    ? _text.FindNextWord(_selection.Cursor)
+                    : (lindex, _text.GetCharacterColumn(lindex, cindex));
             }
         }
 

@@ -57,10 +57,12 @@ three";
         var t = new TextEditor { AllText = before };
         if (breakpoints)
             t.Breakpoints.Add(0, 1);
+
         if (errors)
             t.ErrorMarkers.Add(0, 1);
-        t.Selection.Select((0, 2), (2, 1));
+
         t.CursorPosition = (2, 1);
+        t.Selection.Select((0, 2), (2, 1));
 
         UndoHelper.TestUndo(t, x => x.Modify.Backspace());
         Assert.AreEqual(after, t.AllText);
@@ -89,8 +91,8 @@ three";
         if (errors)
             t.ErrorMarkers.Add(0, 1);
 
-        t.Selection.Select((0, 2), (2, 1));
         t.CursorPosition = (0, 2);
+        t.Selection.Select((0, 2), (2, 1));
 
         UndoHelper.TestUndo(t, x => x.Modify.Backspace());
         Assert.AreEqual(after, t.AllText);
