@@ -79,7 +79,7 @@ public class TextEditorModify
 
         UndoRecord u = _selection.HasSelection 
             ? DeleteSelection() 
-            : new UndoRecord { Before = _selection.State };
+            : new() { Before = _selection.State };
 
         u.Added = clipText;
         u.AddedStart = _selection.GetActualCursorCoordinates();
@@ -146,7 +146,7 @@ public class TextEditorModify
         var u =
             _selection.HasSelection
             ? DeleteSelection()
-            : new UndoRecord { Before = _selection.State };
+            : new() { Before = _selection.State };
 
         var coord = _selection.GetActualCursorCoordinates();
         u.AddedStart = coord;
@@ -217,7 +217,7 @@ public class TextEditorModify
 
         start.Column = 0;
         // end._column = end._line < _text.LineCount ? _state._lines[end._line].Count : 0;
-        if (end.Column == 0 && end.Line > 0)
+        if (end is { Column: 0, Line: > 0 })
             --end.Line;
 
         if (end.Line >= _text.LineCount)

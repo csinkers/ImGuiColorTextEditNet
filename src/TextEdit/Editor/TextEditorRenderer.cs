@@ -142,7 +142,7 @@ public class TextEditorRenderer
         if (_text.PendingScrollRequest != null)
         {
             if (_text.PendingScrollRequest.Value < _text.LineCount)
-                EnsurePositionVisible(new Coordinates(_text.PendingScrollRequest.Value, 0));
+                EnsurePositionVisible(new(_text.PendingScrollRequest.Value, 0));
             ImGui.SetWindowFocus();
             _text.PendingScrollRequest = null;
         }
@@ -158,7 +158,7 @@ public class TextEditorRenderer
     {
         /* Compute _charAdvance regarding to scaled font size (Ctrl + mouse wheel)*/
         float fontSize = _charWidthCache.Get('#');
-        _charAdvance = new Vector2(fontSize, ImGui.GetTextLineHeightWithSpacing() * LineSpacing);
+        _charAdvance = new(fontSize, ImGui.GetTextLineHeightWithSpacing() * LineSpacing);
 
         var alpha = ImGui.GetStyle().Alpha;
         if (MathF.Abs(_lastAlpha - alpha) > float.Epsilon)
@@ -388,7 +388,7 @@ public class TextEditorRenderer
                             var s = ImGui.GetFontSize();
                             var x = textScreenPos.X + bufferOffset.X + spaceSize * 0.5f;
                             var y = textScreenPos.Y + bufferOffset.Y + s * 0.5f;
-                            drawList.AddCircleFilled(new Vector2(x, y), 1.5f, 0x80808080, 4);
+                            drawList.AddCircleFilled(new(x, y), 1.5f, 0x80808080, 4);
                         }
                         bufferOffset.X += spaceSize;
                         i++;
@@ -425,7 +425,7 @@ public class TextEditorRenderer
             }
         }
 
-        ImGui.Dummy(new Vector2(longest + 2, globalLineMax * _charAdvance.Y));
+        ImGui.Dummy(new(longest + 2, globalLineMax * _charAdvance.Y));
     }
 
     static Vector2 DrawText(ImDrawListPtr drawList, Vector2 offset, uint color, StringBuilder sb)

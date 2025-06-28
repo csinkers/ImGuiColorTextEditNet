@@ -2,7 +2,7 @@ using System.Text;
 
 namespace ImGuiColorTextEditNet;
 
-class UndoRecord
+internal class UndoRecord
 {
     public string? Added;
     public Coordinates AddedStart;
@@ -44,7 +44,10 @@ class UndoRecord
         return sb.ToString();
     }
 
-    public UndoRecord() { }
+    public UndoRecord()
+    {
+    }
+
     public UndoRecord(
         string added, Coordinates addedStart, Coordinates addedEnd,
         string removed, Coordinates removedStart, Coordinates removedEnd,

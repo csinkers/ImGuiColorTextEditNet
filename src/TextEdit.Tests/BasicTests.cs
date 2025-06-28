@@ -77,7 +77,7 @@ def";
     [TestMethod]
     public void SetTextLinesTest()
     {
-        var t = new TextEditor { TextLines = new[] { "abc" } };
+        var t = new TextEditor { TextLines = ["abc"] };
 
         Assert.AreEqual("abc", t.AllText);
         Assert.AreEqual(1, t.TotalLines);
@@ -92,7 +92,7 @@ def";
     {
         const string text = @"abc
 def";
-        var t = new TextEditor { TextLines = new[] { "abc", "def" } };
+        var t = new TextEditor { TextLines = ["abc", "def"] };
 
         Assert.AreEqual(text, t.AllText);
         Assert.AreEqual(2, t.TotalLines);

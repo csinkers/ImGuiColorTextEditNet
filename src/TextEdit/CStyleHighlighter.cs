@@ -24,10 +24,10 @@ public class CStyleHighlighter : ISyntaxHighlighter
     {
         var language = useCpp ? CPlusPlus() : C();
 
-        _identifiers = new SimpleTrie<Identifier>();
+        _identifiers = new();
         if (language.Keywords != null)
             foreach (var keyword in language.Keywords)
-                _identifiers.Add(keyword, new Identifier(PaletteIndex.Keyword));
+                _identifiers.Add(keyword, new(PaletteIndex.Keyword));
 
         if (language.Identifiers != null)
         {
@@ -65,7 +65,7 @@ public class CStyleHighlighter : ISyntaxHighlighter
 
             if (result == -1)
             {
-                line[i] = new Glyph(line[i].Char, PaletteIndex.Default);
+                line[i] = new(line[i].Char, PaletteIndex.Default);
                 i++;
             }
             else i += result;
@@ -106,11 +106,11 @@ public class CStyleHighlighter : ISyntaxHighlighter
         state = MultiLineCommentState;
         for (; i < span.Length; i++)
         {
-            span[i] = new Glyph(span[i].Char, PaletteIndex.MultiLineComment);
+            span[i] = new(span[i].Char, PaletteIndex.MultiLineComment);
             if (span[i].Char == '*' && i + 1 < span.Length && span[i + 1].Char == '/')
             {
                 i++;
-                span[i] = new Glyph(span[i].Char, PaletteIndex.MultiLineComment);
+                span[i] = new(span[i].Char, PaletteIndex.MultiLineComment);
                 state = DefaultState;
                 return i;
             }
@@ -125,7 +125,7 @@ public class CStyleHighlighter : ISyntaxHighlighter
             return -1;
 
         for (int i = 0; i < span.Length; i++)
-            span[i] = new Glyph(span[i].Char, PaletteIndex.Comment);
+            span[i] = new(span[i].Char, PaletteIndex.Comment);
 
         return span.Length;
     }
@@ -136,42 +136,46 @@ public class CStyleHighlighter : ISyntaxHighlighter
             return -1;
 
         for (int i = 0; i < span.Length; i++)
-            span[i] = new Glyph(span[i].Char, PaletteIndex.Preprocessor);
+            span[i] = new(span[i].Char, PaletteIndex.Preprocessor);
 
         return span.Length;
     }
 
     static LanguageDefinition C() => new("C")
     {
-        Keywords = new[]{
+        Keywords =
+        [
             "auto", "break", "case", "char", "const", "continue", "default", "do", "double", "else", "enum", "extern", "float", "for", "goto", "if", "inline", "int", "long", "register", "restrict", "return", "short",
             "signed", "sizeof", "static", "struct", "switch", "typedef", "union", "unsigned", "void", "volatile", "while", "_Alignas", "_Alignof", "_Atomic", "_Bool", "_Complex", "_Generic", "_Imaginary",
             "_Noreturn", "_Static_assert", "_Thread_local"
-        },
-        Identifiers = new[]{
+        ],
+        Identifiers =
+        [
             "abort", "abs", "acos", "asin", "atan", "atexit", "atof", "atoi", "atol", "ceil", "clock", "cosh", "ctime", "div", "exit", "fabs", "floor", "fmod", "getchar", "getenv", "isalnum", "isalpha", "isdigit", "isgraph",
             "ispunct", "isspace", "isupper", "kbhit", "log10", "log2", "log", "memcmp", "modf", "pow", "putchar", "putenv", "puts", "rand", "remove", "rename", "sinh", "sqrt", "srand", "strcat", "strcmp", "strerror", "time", "tolower", "toupper"
-        }
+        ]
     };
 
     static LanguageDefinition CPlusPlus() =>
         new("C++")
         {
-            Keywords = new[] {
+            Keywords =
+            [
                 "alignas", "alignof", "and", "and_eq", "asm", "atomic_cancel", "atomic_commit", "atomic_noexcept", "auto", "bitand", "bitor", "bool", "break", "case", "catch", "char", "char16_t", "char32_t", "class",
                 "compl", "concept", "const", "constexpr", "const_cast", "continue", "decltype", "default", "delete", "do", "double", "dynamic_cast", "else", "enum", "explicit", "export", "extern", "false", "float",
                 "for", "friend", "goto", "if", "import", "inline", "int", "long", "module", "mutable", "namespace", "new", "noexcept", "not", "not_eq", "nullptr", "operator", "or", "or_eq", "private", "protected", "public",
                 "register", "reinterpret_cast", "requires", "return", "short", "signed", "sizeof", "static", "static_assert", "static_cast", "struct", "switch", "synchronized", "template", "this", "thread_local",
                 "throw", "true", "try", "typedef", "typeid", "typename", "union", "unsigned", "using", "virtual", "void", "volatile", "wchar_t", "while", "xor", "xor_eq"
-            },
-            Identifiers = new[] {
+            ],
+            Identifiers =
+            [
                 "abort", "abs", "acos", "asin", "atan", "atexit", "atof", "atoi", "atol", "ceil", "clock", "cosh", "ctime",
                 "div", "exit", "fabs", "floor", "fmod", "getchar", "getenv", "isalnum", "isalpha", "isdigit", "isgraph",
                 "ispunct", "isspace", "isupper", "kbhit", "log10", "log2", "log", "memcmp", "modf", "pow", "printf",
                 "sprintf", "snprintf", "putchar", "putenv", "puts", "rand", "remove", "rename", "sinh", "sqrt", "srand",
                 "strcat", "strcmp", "strerror", "time", "tolower", "toupper",
                 "std", "string", "vector", "map", "unordered_map", "set", "unordered_set", "min", "max"
-            }
+            ]
         };
 
     static int TokenizeCStyleString(Span<Glyph> input)
@@ -187,7 +191,7 @@ public class CStyleHighlighter : ISyntaxHighlighter
             if (c == '"')
             {
                 for (int j = 0; j < i; j++)
-                    input[i] = new Glyph(c, PaletteIndex.String);
+                    input[i] = new(c, PaletteIndex.String);
 
                 return i;
             }
@@ -217,7 +221,7 @@ public class CStyleHighlighter : ISyntaxHighlighter
             return -1;
 
         for (int j = 0; j < i; j++)
-            input[j] = new Glyph(input[j].Char, PaletteIndex.CharLiteral);
+            input[j] = new(input[j].Char, PaletteIndex.CharLiteral);
 
         return i;
     }
@@ -242,7 +246,7 @@ public class CStyleHighlighter : ISyntaxHighlighter
         var info = _identifiers.Get<Glyph>(input[..i], x => x.Char);
 
         for (int j = 0; j < i; j++)
-            input[j] = new Glyph(input[j].Char, info?.Color ?? PaletteIndex.Identifier);
+            input[j] = new(input[j].Char, info?.Color ?? PaletteIndex.Identifier);
 
         return i;
     }
@@ -366,7 +370,7 @@ public class CStyleHighlighter : ISyntaxHighlighter
             case '=':
             case '~':
             case ',': case '.':
-                input[0] = new Glyph(input[0].Char, PaletteIndex.Punctuation);
+                input[0] = new(input[0].Char, PaletteIndex.Punctuation);
                 return 1;
             default:
                 return -1;

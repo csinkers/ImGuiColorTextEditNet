@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace ImGuiColorTextEditNet;
 
-class SimpleTrie<TInfo> where TInfo : class
+internal class SimpleTrie<TInfo> where TInfo : class
 {
     class Node
     {
@@ -30,7 +30,7 @@ class SimpleTrie<TInfo> where TInfo : class
         {
             if (!node.Children.TryGetValue(c, out var newNode))
             {
-                newNode = new Node(node.Path + c);
+                newNode = new(node.Path + c);
                 node.Children[c] = newNode;
             }
 

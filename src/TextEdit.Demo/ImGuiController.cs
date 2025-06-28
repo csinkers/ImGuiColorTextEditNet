@@ -39,7 +39,7 @@ namespace TextEdit.Demo
         readonly Dictionary<TextureView, ResourceSetInfo> _setsByView = new();
         readonly Dictionary<Texture, TextureView> _autoViewsByTexture = new();
         readonly Dictionary<IntPtr, ResourceSetInfo> _viewsById = new();
-        readonly List<IDisposable> _ownedResources = new();
+        readonly List<IDisposable> _ownedResources = [];
         int _lastAssignedID = 100;
 
         /// <summary>
@@ -114,7 +114,7 @@ namespace TextEdit.Demo
                 new DepthStencilStateDescription(false, false, ComparisonKind.Always),
                 new RasterizerStateDescription(FaceCullMode.None, PolygonFillMode.Solid, FrontFace.Clockwise, false, true),
                 PrimitiveTopology.TriangleList,
-                new ShaderSetDescription(vertexLayouts, new[] { _vertexShader, _fragmentShader }),
+                new ShaderSetDescription(vertexLayouts, [_vertexShader, _fragmentShader]),
                 [_layout, _textureLayout],
                 outputDescription,
                 ResourceBindingModel.Default);

@@ -15,7 +15,7 @@ internal class TextEditorText
     internal TextEditorText(TextEditorOptions options)
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));
-        _lines.Add(new Line());
+        _lines.Add(new());
     }
 
     internal int LineCount => _lines.Count;
@@ -85,7 +85,7 @@ internal class TextEditorText
     internal void SetText(string value)
     {
         _lines.Clear();
-        _lines.Add(new Line());
+        _lines.Add(new());
 
         foreach (var chr in value)
         {
@@ -95,11 +95,11 @@ internal class TextEditorText
             }
             else if (chr == '\n')
             {
-                _lines.Add(new Line());
+                _lines.Add(new());
             }
             else
             {
-                _lines[^1].Glyphs.Add(new Glyph(chr, PaletteIndex.Default));
+                _lines[^1].Glyphs.Add(new(chr, PaletteIndex.Default));
             }
         }
 
@@ -132,16 +132,16 @@ internal class TextEditorText
 
             if (value.Count == 0)
             {
-                _lines.Add(new Line());
+                _lines.Add(new());
             }
             else
             {
                 _lines.Capacity = value.Count;
                 foreach (var stringLine in value)
                 {
-                    var internalLine = new Line(new List<Glyph>(stringLine.Length));
+                    var internalLine = new Line(new(stringLine.Length));
                     foreach (var c in stringLine)
-                        internalLine.Glyphs.Add(new Glyph(c, PaletteIndex.Default));
+                        internalLine.Glyphs.Add(new(c, PaletteIndex.Default));
 
                     _lines.Add(internalLine);
                 }
@@ -240,9 +240,9 @@ internal class TextEditorText
 
     internal void InsertLine(int lineNumber, string text, PaletteIndex color = PaletteIndex.Default)
     {
-        var line = new Line(new List<Glyph>(text.Length));
+        var line = new Line(new(text.Length));
         foreach(var c in text)
-            line.Glyphs.Add(new Glyph(c, color));
+            line.Glyphs.Add(new(c, color));
         InsertLine(lineNumber, line);
     }
 
@@ -257,7 +257,7 @@ internal class TextEditorText
     {
         var line = _lines[lineNum];
         foreach (var c in text)
-            line.Glyphs.Add(new Glyph(c, color));
+            line.Glyphs.Add(new(c, color));
     }
 
     internal void InsertCharAt(Coordinates pos, char c)
@@ -609,12 +609,12 @@ internal class TextEditorText
 
             if (c == '\n')
             {
-                line = new Line();
+                line = new();
                 InsertLine(LineCount, line);
             }
             else
             {
-                line.Glyphs.Add(new Glyph(c, color));
+                line.Glyphs.Add(new(c, color));
             }
         }
     }

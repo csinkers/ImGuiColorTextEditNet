@@ -42,16 +42,16 @@ public class TextEditor
     /// <summary>Initializes a new instance of the <see cref="TextEditor"/> class with default options and configurations.</summary>
     public TextEditor()
     {
-        Options = new TextEditorOptions();
-        Text = new TextEditorText(Options);
-        Selection = new TextEditorSelection(Text);
-        Breakpoints = new TextEditorBreakpoints(Text);
-        ErrorMarkers =  new TextEditorErrorMarkers(Text);
-        Color = new TextEditorColor(Options, Text);
-        Movement = new TextEditorMovement(Selection, Text);
-        UndoStack = new TextEditorUndoStack(Text, Color, Options, Selection);
-        Modify = new TextEditorModify(Selection, Text, UndoStack, Options, Color);
-        Renderer = new TextEditorRenderer(this, Palettes.Dark)
+        Options = new();
+        Text = new(Options);
+        Selection = new(Text);
+        Breakpoints = new(Text);
+        ErrorMarkers =  new(Text);
+        Color = new(Options, Text);
+        Movement = new(Selection, Text);
+        UndoStack = new(Text, Color, Options, Selection);
+        Modify = new(Selection, Text, UndoStack, Options, Color);
+        Renderer = new(this, Palettes.Dark)
         {
             KeyboardInput = new StandardKeyboardInput(this),
             MouseInput = new StandardMouseInput(this)

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace ImGuiColorTextEditNet;
 
-class SimpleCache<TKey, TValue> where TKey : notnull
+internal class SimpleCache<TKey, TValue> where TKey : notnull
 {
     const int CyclePeriod = 500;
 
@@ -42,7 +42,7 @@ class SimpleCache<TKey, TValue> where TKey : notnull
             {
                 // Console.WriteLine($"Cache {_name} cycling ({_lastCache.Count} -> {_cache.Count})");
                 _lastCache = _cache;
-                _cache = new Dictionary<TKey, TValue>();
+                _cache = new();
             }
         }
 
