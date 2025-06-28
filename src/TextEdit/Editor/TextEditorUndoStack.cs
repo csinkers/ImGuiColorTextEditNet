@@ -53,6 +53,9 @@ internal class TextEditorUndoStack
             value.After.Cursor.Line, value.After.Cursor.Column);
         */
 
+        // If we are in the middle of the undo stack, remove all records after the current index
+        if (_undoIndex < _undoBuffer.Count)
+            _undoBuffer.RemoveRange(_undoIndex, _undoBuffer.Count - _undoIndex);
         _undoBuffer.Insert(_undoIndex, value);
         ++_undoIndex;
     }
