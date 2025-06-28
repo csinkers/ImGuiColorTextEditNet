@@ -36,6 +36,7 @@ public static class Program
             out var gd);
 
         var controller = new ImGuiController(gd, gd.MainSwapchain.Framebuffer.OutputDescription, window.Width, window.Height);
+        var font = SetupFont(controller);
 
         var cl = gd.ResourceFactory.CreateCommandList();
         window.Resized += () =>
@@ -83,34 +84,6 @@ public static class Program
 
         DateTime lastFrame = DateTime.Now;
 
-        var io = ImGui.GetIO();
-        ImFontPtr font;
-        unsafe
-        {
-            var nativeConfig = ImGuiNative.ImFontConfig_ImFontConfig();
-            nativeConfig->OversampleH = 8;
-            nativeConfig->OversampleV = 8;
-            nativeConfig->RasterizerMultiply = 1f;
-            nativeConfig->GlyphOffset = new Vector2(0);
-
-            var dir = Directory.GetCurrentDirectory();
-            var fontPath = Path.Combine(dir, "SpaceMono-Regular.ttf");
-
-            if (!File.Exists(fontPath))
-                throw new FileNotFoundException("Could not find font file at " + fontPath);
-
-            font = io.Fonts.AddFontFromFileTTF(
-                    fontPath,
-                    16, // size in pixels
-                    nativeConfig);
-
-            if (font.NativePtr == (ImFont *)0 )
-                throw new InvalidOperationException("Font could not be loaded");
-            controller.RecreateFontDeviceTexture();
-        }
-
-        io.FontGlobalScale = 2.0f;
-
         while (window.Exists)
         {
             var input = window.PumpEvents();
@@ -154,5 +127,33 @@ public static class Program
         }
 
         controller.DestroyDeviceObjects();
+    }
+
+    static unsafe ImFontPtr SetupFont(ImGuiController controller)
+    {
+        var io = ImGui.GetIO();
+        var nativeConfig = ImGuiNative.ImFontConfig_ImFontConfig();
+        nativeConfig->OversampleH = 8;
+        nativeConfig->OversampleV = 8;
+        nativeConfig->RasterizerMultiply = 1f;
+        nativeConfig->GlyphOffset = new Vector2(0);
+
+        var dir = Directory.GetCurrentDirectory();
+        var fontPath = Path.Combine(dir, "SpaceMono-Regular.ttf");
+
+        if (!File.Exists(fontPath))
+            throw new FileNotFoundException("Could not find font file at " + fontPath);
+
+        var font = io.Fonts.AddFontFromFileTTF(
+            fontPath,
+            16, // size in pixels
+            nativeConfig);
+
+        if (font.NativePtr == (ImFont*)0)
+            throw new InvalidOperationException("Font could not be loaded");
+        controller.RecreateFontDeviceTexture();
+
+        io.FontGlobalScale = 2.0f;
+        return font;
     }
 }
