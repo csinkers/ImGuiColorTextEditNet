@@ -67,4 +67,19 @@ internal class UndoRecord
         Before = before;
         After = after;
     }
+
+    public object SerializeState() =>
+        new
+        {
+            Added,
+            AddedStart = AddedStart.ToString(),
+            AddedEnd = AddedEnd.ToString(),
+
+            Removed,
+            RemovedStart = RemovedStart.ToString(),
+            RemovedEnd = RemovedEnd.ToString(),
+
+            Before = Before.ToString(),
+            After = After.ToString()
+        };
 }

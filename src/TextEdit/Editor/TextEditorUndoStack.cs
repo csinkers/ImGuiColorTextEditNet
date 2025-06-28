@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text.Json;
 
 namespace ImGuiColorTextEditNet.Editor;
 
@@ -98,5 +100,16 @@ internal class TextEditorUndoStack
         _selection.Select(record.After.Start, record.After.End);
         _selection.Cursor = record.After.Cursor;
         _text.PendingScrollRequest = _selection.Cursor.Line;
+    }
+
+    public object SerializeState()
+    {
+        var state = new
+        {
+            UndoIndex = _undoIndex,
+            UndoBuffer = _undoBuffer.Select(x => x.SerializeState()).ToList(),
+        };
+
+        return JsonSerializer.Serialize(state, new JsonSerializerOptions { WriteIndented = true });
     }
 }

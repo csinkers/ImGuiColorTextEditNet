@@ -255,9 +255,9 @@ test.com
         t.Selection.Select((1,3), (1,3));
         t.CursorPosition = (1, 3);
         t.Movement.MoveRight(1, true, true);
-        Assert.AreEqual((1,8), t.CursorPosition);
+        Assert.AreEqual((1,4), t.CursorPosition);
         Assert.AreEqual((1,3), t.Selection.Start);
-        Assert.AreEqual((1,8), t.Selection.End);
+        Assert.AreEqual((1,4), t.Selection.End);
     }
 
     [TestMethod]

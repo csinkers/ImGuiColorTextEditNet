@@ -239,20 +239,20 @@ public class TextEditorModify
             var line = _text.GetLine(i);
             if (shift)
             {
-                if (line.Length != 0)
+                if (line.Length == 0)
+                    continue;
+
+                if (line[0].Char == '\t')
                 {
-                    if (line[0].Char == '\t')
+                    _text.RemoveInLine(i, 0, 1);
+                    modified = true;
+                }
+                else
+                {
+                    for (int j = 0; j < _text.TabSize && line.Length != 0 && line[0].Char == ' '; j++)
                     {
                         _text.RemoveInLine(i, 0, 1);
                         modified = true;
-                    }
-                    else
-                    {
-                        for (int j = 0; j < _text.TabSize && line.Length != 0 && line[0].Char == ' '; j++)
-                        {
-                            _text.RemoveInLine(i, 0, 1);
-                            modified = true;
-                        }
                     }
                 }
             }
@@ -263,34 +263,36 @@ public class TextEditorModify
             }
         }
 
-        if (modified)
+        if (!modified)
+            return;
+
+        start = (start.Line, _text.GetCharacterColumn(start.Line, 0));
+        Coordinates rangeEnd;
+        if (originalEnd.Column != 0)
         {
-            start = (start.Line, _text.GetCharacterColumn(start.Line, 0));
-            Coordinates rangeEnd;
-            if (originalEnd.Column != 0)
-            {
-                end = (end.Line, _text.GetLineMaxColumn(end.Line));
-                rangeEnd = end;
-                u.Added = _text.GetText(start, end);
-            }
-            else
-            {
-                end = (originalEnd.Line, 0);
-                rangeEnd = (end.Line - 1, _text.GetLineMaxColumn(end.Line - 1));
-                u.Added = _text.GetText(start, rangeEnd);
-            }
-
-            u.AddedStart = start;
-            u.AddedEnd = rangeEnd;
-            u.After = _selection.State;
-
-            _selection.Start = start;
-            _selection.End = end;
-            _undo.AddUndo(u);
-
-            _text.PendingScrollRequest = end.Line;
+            end = (end.Line, _text.GetLineMaxColumn(end.Line));
+            rangeEnd = end;
+            u.Added = _text.GetText(start, end);
         }
+        else
+        {
+            end = (originalEnd.Line, 0);
+            rangeEnd = (end.Line - 1, _text.GetLineMaxColumn(end.Line - 1));
+            u.Added = _text.GetText(start, rangeEnd);
+        }
+
+        _selection.Start = start;
+        _selection.End = end;
+
+        u.AddedStart = start;
+        u.AddedEnd = rangeEnd;
+        u.After = _selection.State;
+
+        _undo.AddUndo(u);
+
+        _text.PendingScrollRequest = end.Line;
     }
+
     /// <summary>Deletes the character before the cursor position or the selected text if any exists.</summary>
     public void Backspace()
     {

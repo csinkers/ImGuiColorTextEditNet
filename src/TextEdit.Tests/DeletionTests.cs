@@ -17,7 +17,7 @@ public class DeletionTests
         if (errors) t.ErrorMarkers.Add(0, 1);
         Assert.AreEqual((0, 0), t.CursorPosition);
 
-        UndoHelper.TestUndo(t, x => x.Modify.Backspace());
+        UndoHelper.TestNopUndo(t, x => x.Modify.Backspace()); // Backspace at start of a line should do nothing
         Assert.AreEqual("abc", t.AllText);
         Assert.AreEqual(0, t.UndoCount);
         Assert.AreEqual(0, t.UndoIndex);
@@ -103,7 +103,7 @@ three";
         Assert.AreEqual(1, t.UndoIndex);
 
         t.CursorPosition = (0, 2);
-        UndoHelper.TestUndo(t, x => x.Modify.Delete());
+        UndoHelper.TestNopUndo(t, x => x.Modify.Delete());
         Assert.AreEqual("bc", t.AllText);
         Assert.AreEqual((0, 2), t.CursorPosition);
         Assert.AreEqual(1, t.UndoCount);
