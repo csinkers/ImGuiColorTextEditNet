@@ -59,8 +59,10 @@ public class InsertionTests
         var t = new TextEditor();
         if (breakpoints)
             t.Breakpoints.Add(0, 1);
+
         if (errors)
             t.ErrorMarkers.Add(0, 1);
+
         Assert.AreEqual("", t.AllText);
 
         UndoHelper.TestUndo(t, x => x.Modify.EnterCharacter('\n'));
