@@ -17,7 +17,13 @@ public class TextEditorRenderer
     static readonly uint MagentaUInt = 0xff00ffff;
 
     // Note: if fonts / sizes can ever be changed the char width cache will need to be invalidated.
-    readonly SimpleCache<char, float> _charWidthCache = new("char widths", x => ImGui.CalcTextSize(x.ToString()).X);
+    readonly SimpleCache<char, float> _charWidthCache = new("char widths", x =>
+    {
+        var font = ImGui.GetFont();
+        float scale = ImGui.GetFontSize() / font.FontSize;
+        return font.GetCharAdvance(x) * scale;
+    });
+
     readonly SimpleCache<int, string> _lineNumberCache = new("line numbers", x => $"{x} ");
     readonly TextEditorSelection _selection;
     readonly TextEditorText _text;
@@ -143,6 +149,7 @@ public class TextEditorRenderer
         {
             if (_text.PendingScrollRequest.Value < _text.LineCount)
                 EnsurePositionVisible(new(_text.PendingScrollRequest.Value, 0));
+
             ImGui.SetWindowFocus();
             _text.PendingScrollRequest = null;
         }
@@ -191,7 +198,6 @@ public class TextEditorRenderer
         float longest = _textStart;
 
         Vector2 cursorScreenPos = ImGui.GetCursorScreenPos();
-        var scrollX = ImGui.GetScrollX();
         var scrollY = ImGui.GetScrollY();
 
         var lineNo = (int)MathF.Floor(scrollY / _charAdvance.Y);
@@ -199,214 +205,21 @@ public class TextEditorRenderer
         var lineMax = Math.Max(0, Math.Min(globalLineMax - 1, lineNo + (int)MathF.Floor((scrollY + contentSize.Y) / _charAdvance.Y)));
 
         // Deduce _textStart by evaluating _lines size (global lineMax) plus two spaces as text width
-        float spaceSize = _charWidthCache.Get(' ');
+        float spaceWidth = _charWidthCache.Get(' ');
         var buf = _lineNumberCache.Get(globalLineMax);
-        _textStart = ImGui.CalcTextSize(buf).X + LeftMargin + spaceSize;
+        _textStart = ImGui.CalcTextSize(buf).X + LeftMargin + spaceWidth;
 
         if (globalLineMax != 0)
         {
-            while (lineNo <= lineMax)
+            for (;lineNo <= lineMax; ++lineNo)
             {
-                Vector2 lineStartScreenPos = cursorScreenPos with { Y = cursorScreenPos.Y + lineNo * _charAdvance.Y };
-                Vector2 textScreenPos = lineStartScreenPos with { X = lineStartScreenPos.X + _textStart };
-
-                var line = _text.GetLine(lineNo);
-                longest = Math.Max(
-                    _textStart + TextDistanceToLineStart((lineNo, _text.GetLineMaxColumn(lineNo))),
-                    longest);
-
-                Coordinates lineStartCoord = new(lineNo, 0);
-                Coordinates lineEndCoord = new(lineNo, _text.GetLineMaxColumn(lineNo));
-
-                // Draw selection for the current line
-                float sstart = float.NegativeInfinity;
-                float ssend = float.NegativeInfinity;
-
-                Util.Assert(_selection.Start <= _selection.End);
-                if (_selection.Start <= lineEndCoord)
-                    sstart = _selection.Start > lineStartCoord ? TextDistanceToLineStart(_selection.Start) : 0.0f;
-                if (_selection.End > lineStartCoord)
-                    ssend = TextDistanceToLineStart(_selection.End < lineEndCoord ? _selection.End : lineEndCoord);
-
-                if (_selection.End.Line > lineNo)
-                    ssend += _charAdvance.X;
-
-                if (!float.IsNegativeInfinity(sstart) && !float.IsNegativeInfinity(ssend) && sstart < ssend)
-                {
-                    Vector2 vstart = lineStartScreenPos with { X = lineStartScreenPos.X + _textStart + sstart };
-                    Vector2 vend = new(lineStartScreenPos.X + _textStart + ssend, lineStartScreenPos.Y + _charAdvance.Y);
-                    drawList.AddRectFilled(vstart, vend, ColorUInt(PaletteIndex.Selection));
-                }
-
-                // Draw breakpoints
-                var start = lineStartScreenPos with { X = lineStartScreenPos.X + scrollX };
-
-                if (_breakpoints.IsLineBreakpoint(lineNo + 1))
-                {
-                    var end = new Vector2(
-                        lineStartScreenPos.X + contentSize.X + 2.0f * scrollX,
-                        lineStartScreenPos.Y + _charAdvance.Y);
-
-                    drawList.AddRectFilled(start, end, ColorUInt(PaletteIndex.Breakpoint));
-                }
-
-                if (lineNo == _selection.HighlightedLine)
-                {
-                    var end = new Vector2(
-                        lineStartScreenPos.X + contentSize.X + 2.0f * scrollX,
-                        lineStartScreenPos.Y + _charAdvance.Y);
-
-                    var color = ColorUInt(PaletteIndex.ExecutingLine);
-                    drawList.AddRectFilled(start, end, color);
-                }
-
-                // Draw error markers
-                if (_errorMarkers.TryGetErrorForLine(lineNo + 1, out var error))
-                {
-                    var end = new Vector2(
-                        lineStartScreenPos.X + contentSize.X + 2.0f * scrollX,
-                        lineStartScreenPos.Y + _charAdvance.Y);
-
-                    drawList.AddRectFilled(start, end, ColorUInt(PaletteIndex.ErrorMarker));
-
-                    if (ImGui.IsMouseHoveringRect(lineStartScreenPos, end))
-                    {
-                        ImGui.BeginTooltip();
-                        ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(1.0f, 0.2f, 0.2f, 1.0f));
-                        ImGui.Text($"Error at line {lineNo + 1}:");
-                        ImGui.PopStyleColor();
-                        ImGui.Separator();
-                        ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(1.0f, 1.0f, 0.2f, 1.0f));
-                        ImGui.Text(error);
-                        ImGui.PopStyleColor();
-                        ImGui.EndTooltip();
-                    }
-                }
-
-                // Draw line number (right aligned)
-                buf = _lineNumberCache.Get(lineNo + 1);
-
-                var lineNoWidth = ImGui.CalcTextSize(buf).X;
-                drawList.AddText(
-                    lineStartScreenPos with { X = lineStartScreenPos.X + _textStart - lineNoWidth },
-                    ColorUInt(PaletteIndex.LineNumber),
-                    buf);
-
-                if (_selection.Cursor.Line == lineNo)
-                {
-                    var focused = ImGui.IsWindowFocused();
-
-                    // Highlight the current line (where the cursor is)
-                    if (!_selection.HasSelection)
-                    {
-                        var end = new Vector2(start.X + contentSize.X + scrollX, start.Y + _charAdvance.Y);
-                        drawList.AddRectFilled(
-                            start,
-                            end,
-                            ColorUInt((focused ? PaletteIndex.CurrentLineFill : PaletteIndex.CurrentLineFillInactive)));
-
-                        drawList.AddRect(start, end, ColorUInt(PaletteIndex.CurrentLineEdge), 1.0f);
-                    }
-
-                    // Render the cursor
-                    if (focused)
-                    {
-                        var timeEnd = DateTime.UtcNow;
-                        var elapsed = timeEnd - _startTime;
-                        if (elapsed.Milliseconds > CursorBlinkPeriodMs / 2)
-                        {
-                            float width = 1.0f;
-                            var cindex = _text.GetCharacterIndex(_selection.Cursor);
-                            float cx = TextDistanceToLineStart(_selection.Cursor);
-
-                            if (_options.IsOverwrite && cindex < line.Length)
-                            {
-                                var c = line[cindex].Char;
-                                if (c == '\t')
-                                {
-                                    var x = (1.0f + MathF.Floor((1.0f + cx) / (_text.TabSize * spaceSize))) * (_text.TabSize * spaceSize);
-                                    width = x - cx;
-                                }
-                                else
-                                {
-                                    width = _charWidthCache.Get(line[cindex].Char);
-                                }
-                            }
-
-                            Vector2 cstart = lineStartScreenPos with { X = textScreenPos.X + cx };
-                            Vector2 cend = new(textScreenPos.X + cx + width, lineStartScreenPos.Y + _charAdvance.Y);
-                            drawList.AddRectFilled(cstart, cend, ColorUInt(PaletteIndex.Cursor));
-                            if (elapsed.Milliseconds > CursorBlinkPeriodMs)
-                                _startTime = timeEnd;
-                        }
-                    }
-                }
-
-                // Render colorized text
-                uint prevColor = line.Length == 0 ? ColorUInt(PaletteIndex.Default) : ColorUInt(line[0].ColorIndex);
-                var bufferOffset = new Vector2();
-
-                for (int i = 0; i < line.Length;)
-                {
-                    var glyph = line[i];
-                    var color = ColorUInt(glyph.ColorIndex);
-
-                    if ((color != prevColor || glyph.Char is '\t' or ' ') && _lineBuffer.Length != 0)
-                    {
-                        Vector2 newOffset = new(textScreenPos.X + bufferOffset.X, textScreenPos.Y + bufferOffset.Y);
-                        var textSize = DrawText(drawList, newOffset, prevColor, _lineBuffer);
-                        bufferOffset.X += textSize.X;
-                        _lineBuffer.Clear();
-                    }
-                    prevColor = color;
-
-                    if (glyph.Char == '\t')
-                    {
-                        var oldX = bufferOffset.X;
-                        bufferOffset.X = (1.0f + MathF.Floor((1.0f + bufferOffset.X) / (_text.TabSize * spaceSize))) * (_text.TabSize * spaceSize);
-                        ++i;
-
-                        if (IsShowingWhitespace)
-                        {
-                            var s = ImGui.GetFontSize();
-                            var x1 = textScreenPos.X + oldX + 1.0f;
-                            var x2 = textScreenPos.X + bufferOffset.X - 1.0f;
-                            var y = textScreenPos.Y + bufferOffset.Y + s * 0.5f;
-                            Vector2 p1 = new(x1, y);
-                            Vector2 p2 = new(x2, y);
-                            Vector2 p3 = new(x2 - s * 0.2f, y - s * 0.2f);
-                            Vector2 p4 = new(x2 - s * 0.2f, y + s * 0.2f);
-                            drawList.AddLine(p1, p2, 0x90909090);
-                            drawList.AddLine(p2, p3, 0x90909090);
-                            drawList.AddLine(p2, p4, 0x90909090);
-                        }
-                    }
-                    else if (glyph.Char == ' ')
-                    {
-                        if (IsShowingWhitespace)
-                        {
-                            var s = ImGui.GetFontSize();
-                            var x = textScreenPos.X + bufferOffset.X + spaceSize * 0.5f;
-                            var y = textScreenPos.Y + bufferOffset.Y + s * 0.5f;
-                            drawList.AddCircleFilled(new(x, y), 1.5f, 0x80808080, 4);
-                        }
-                        bufferOffset.X += spaceSize;
-                        i++;
-                    }
-                    else
-                    {
-                        _lineBuffer.Append(line[i++].Char);
-                    }
-                }
-
-                if (_lineBuffer.Length != 0)
-                {
-                    Vector2 newOffset = new(textScreenPos.X + bufferOffset.X, textScreenPos.Y + bufferOffset.Y);
-                    DrawText(drawList, newOffset, prevColor, _lineBuffer);
-                    _lineBuffer.Clear();
-                }
-
-                ++lineNo;
+                RenderInnerLine(
+                    cursorScreenPos,
+                    lineNo,
+                    drawList,
+                    contentSize.X,
+                    spaceWidth,
+                    ref longest);
             }
 
             if (ImGui.IsMousePosValid())
@@ -426,6 +239,212 @@ public class TextEditorRenderer
         }
 
         ImGui.Dummy(new(longest + 2, globalLineMax * _charAdvance.Y));
+    }
+
+    void RenderInnerLine(Vector2 cursorScreenPos, int lineNo, ImDrawListPtr drawList, float contentWidth, float spaceWidth, ref float longest)
+    {
+        Vector2 lineStartScreenPos = cursorScreenPos with { Y = cursorScreenPos.Y + lineNo * _charAdvance.Y };
+        Vector2 textScreenPos = lineStartScreenPos with { X = lineStartScreenPos.X + _textStart };
+
+        var line = _text.GetLine(lineNo);
+        longest = Math.Max(
+            _textStart + TextDistanceToLineStart((lineNo, _text.GetLineMaxColumn(lineNo))),
+            longest);
+
+        Coordinates lineStartCoord = new(lineNo, 0);
+        Coordinates lineEndCoord = new(lineNo, _text.GetLineMaxColumn(lineNo));
+
+        // Draw selection for the current line
+        float selectionStart = float.NegativeInfinity;
+        float selectionEnd = float.NegativeInfinity;
+
+        Util.Assert(_selection.Start <= _selection.End);
+        if (_selection.Start <= lineEndCoord)
+            selectionStart = _selection.Start > lineStartCoord ? TextDistanceToLineStart(_selection.Start) : 0.0f;
+
+        if (_selection.End > lineStartCoord)
+            selectionEnd = TextDistanceToLineStart(_selection.End < lineEndCoord ? _selection.End : lineEndCoord);
+
+        if (_selection.End.Line > lineNo && line.Length == 0)
+            selectionEnd += _charAdvance.X;
+
+        if (!float.IsNegativeInfinity(selectionStart) && !float.IsNegativeInfinity(selectionEnd) && selectionStart < selectionEnd)
+        {
+            Vector2 vstart = lineStartScreenPos with { X = lineStartScreenPos.X + _textStart + selectionStart };
+            Vector2 vend = new(lineStartScreenPos.X + _textStart + selectionEnd, lineStartScreenPos.Y + _charAdvance.Y);
+            drawList.AddRectFilled(vstart, vend, ColorUInt(PaletteIndex.Selection));
+        }
+
+        // Draw breakpoints
+        var scrollX = ImGui.GetScrollX();
+        var start = lineStartScreenPos with { X = lineStartScreenPos.X + scrollX };
+
+        if (_breakpoints.IsLineBreakpoint(lineNo + 1))
+        {
+            var end = new Vector2(
+                lineStartScreenPos.X + contentWidth + 2.0f * scrollX,
+                lineStartScreenPos.Y + _charAdvance.Y);
+
+            drawList.AddRectFilled(start, end, ColorUInt(PaletteIndex.Breakpoint));
+        }
+
+        if (lineNo == _selection.HighlightedLine)
+        {
+            var end = new Vector2(
+                lineStartScreenPos.X + contentWidth + 2.0f * scrollX,
+                lineStartScreenPos.Y + _charAdvance.Y);
+
+            var color = ColorUInt(PaletteIndex.ExecutingLine);
+            drawList.AddRectFilled(start, end, color);
+        }
+
+        // Draw error markers
+        if (_errorMarkers.TryGetErrorForLine(lineNo + 1, out var error))
+        {
+            var end = new Vector2(
+                lineStartScreenPos.X + contentWidth + 2.0f * scrollX,
+                lineStartScreenPos.Y + _charAdvance.Y);
+
+            drawList.AddRectFilled(start, end, ColorUInt(PaletteIndex.ErrorMarker));
+
+            if (ImGui.IsMouseHoveringRect(lineStartScreenPos, end))
+            {
+                ImGui.BeginTooltip();
+                ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(1.0f, 0.2f, 0.2f, 1.0f));
+                ImGui.Text($"Error at line {lineNo + 1}:");
+                ImGui.PopStyleColor();
+                ImGui.Separator();
+                ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(1.0f, 1.0f, 0.2f, 1.0f));
+                ImGui.Text(error);
+                ImGui.PopStyleColor();
+                ImGui.EndTooltip();
+            }
+        }
+
+        // Draw line number (right aligned)
+        string buf = _lineNumberCache.Get(lineNo + 1);
+
+        var lineNoWidth = ImGui.CalcTextSize(buf).X;
+        drawList.AddText(
+            lineStartScreenPos with { X = lineStartScreenPos.X + _textStart - lineNoWidth },
+            ColorUInt(PaletteIndex.LineNumber),
+            buf);
+
+        if (_selection.Cursor.Line == lineNo)
+        {
+            var focused = ImGui.IsWindowFocused();
+
+            // Highlight the current line (where the cursor is)
+            if (!_selection.HasSelection)
+            {
+                var end = new Vector2(start.X + contentWidth + scrollX, start.Y + _charAdvance.Y);
+                drawList.AddRectFilled(
+                    start,
+                    end,
+                    ColorUInt((focused ? PaletteIndex.CurrentLineFill : PaletteIndex.CurrentLineFillInactive)));
+
+                drawList.AddRect(start, end, ColorUInt(PaletteIndex.CurrentLineEdge), 1.0f);
+            }
+
+            // Render the cursor
+            if (focused)
+            {
+                var timeEnd = DateTime.UtcNow;
+                var elapsed = timeEnd - _startTime;
+                if (elapsed.Milliseconds > CursorBlinkPeriodMs / 2)
+                {
+                    float width = 1.0f;
+                    var cindex = _text.GetCharacterIndex(_selection.Cursor);
+                    float cx = TextDistanceToLineStart(_selection.Cursor);
+
+                    if (_options.IsOverwrite && cindex < line.Length)
+                    {
+                        var c = line[cindex].Char;
+                        if (c == '\t')
+                        {
+                            var x = (1.0f + MathF.Floor((1.0f + cx) / (_text.TabSize * spaceWidth))) * (_text.TabSize * spaceWidth);
+                            width = x - cx;
+                        }
+                        else
+                        {
+                            width = _charWidthCache.Get(line[cindex].Char);
+                        }
+                    }
+
+                    Vector2 cstart = lineStartScreenPos with { X = textScreenPos.X + cx };
+                    Vector2 cend = new(textScreenPos.X + cx + width, lineStartScreenPos.Y + _charAdvance.Y);
+                    drawList.AddRectFilled(cstart, cend, ColorUInt(PaletteIndex.Cursor));
+                    if (elapsed.Milliseconds > CursorBlinkPeriodMs)
+                        _startTime = timeEnd;
+                }
+            }
+        }
+
+        // Render colorized text
+        uint prevColor = line.Length == 0 ? ColorUInt(PaletteIndex.Default) : ColorUInt(line[0].ColorIndex);
+        var bufferOffset = new Vector2();
+
+        for (int i = 0; i < line.Length;)
+        {
+            var glyph = line[i];
+            var color = ColorUInt(glyph.ColorIndex);
+
+            if ((color != prevColor || glyph.Char is '\t' or ' ') && _lineBuffer.Length != 0)
+            {
+                Vector2 newOffset = new(textScreenPos.X + bufferOffset.X, textScreenPos.Y + bufferOffset.Y);
+                var textSize = DrawText(drawList, newOffset, prevColor, _lineBuffer);
+                bufferOffset.X += textSize.X;
+                _lineBuffer.Clear();
+            }
+            prevColor = color;
+
+            if (glyph.Char == '\t')
+            {
+                var oldX = bufferOffset.X;
+                bufferOffset.X = (1.0f + MathF.Floor((1.0f + bufferOffset.X) / (_text.TabSize * spaceWidth))) * (_text.TabSize * spaceWidth);
+                ++i;
+
+                if (IsShowingWhitespace)
+                {
+                    var s = ImGui.GetFontSize();
+                    var x1 = textScreenPos.X + oldX + 1.0f;
+                    var x2 = textScreenPos.X + bufferOffset.X - 1.0f;
+                    var y = textScreenPos.Y + bufferOffset.Y + s * 0.5f;
+
+                    Vector2 p1 = new(x1, y);
+                    Vector2 p2 = new(x2, y);
+                    Vector2 p3 = new(x2 - s * 0.2f, y - s * 0.2f);
+                    Vector2 p4 = new(x2 - s * 0.2f, y + s * 0.2f);
+
+                    drawList.AddLine(p1, p2, 0x90909090);
+                    drawList.AddLine(p2, p3, 0x90909090);
+                    drawList.AddLine(p2, p4, 0x90909090);
+                }
+            }
+            else if (glyph.Char == ' ')
+            {
+                if (IsShowingWhitespace)
+                {
+                    var s = ImGui.GetFontSize();
+                    var x = textScreenPos.X + bufferOffset.X + spaceWidth * 0.5f;
+                    var y = textScreenPos.Y + bufferOffset.Y + s * 0.5f;
+                    drawList.AddCircleFilled(new(x, y), 1.5f, 0x80808080, 4);
+                }
+                bufferOffset.X += spaceWidth;
+                i++;
+            }
+            else
+            {
+                _lineBuffer.Append(line[i++].Char);
+            }
+        }
+
+        if (_lineBuffer.Length != 0)
+        {
+            Vector2 newOffset = textScreenPos + bufferOffset;
+            DrawText(drawList, newOffset, prevColor, _lineBuffer);
+            _lineBuffer.Clear();
+        }
     }
 
     static Vector2 DrawText(ImDrawListPtr drawList, Vector2 offset, uint color, StringBuilder sb)
@@ -465,9 +484,19 @@ public class TextEditorRenderer
         float spaceSize = _charWidthCache.Get(' '); // remaining
 
         int colIndex = _text.GetCharacterIndex(position);
+        PaletteIndex lastColor = 0;
         for (int i = 0; i < line.Length && i < colIndex;)
         {
-            var c = line[i].Char;
+            var glyph = line[i];
+            if (lastColor != glyph.ColorIndex && glyph.Char != ' ')
+            {
+                lastColor = glyph.ColorIndex;
+                // Each 'text block' that ImGui draws gets aligned to a 1-pixel grid
+                // so when the color changes we need to round up!
+                distance = MathF.Ceiling(distance);
+            }
+
+            var c = glyph.Char;
             distance =
                 c == '\t'
                     ? (1.0f + MathF.Floor((1.0f + distance) / (_text.TabSize * spaceSize))) * (_text.TabSize * spaceSize)
