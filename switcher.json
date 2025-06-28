@@ -1,0 +1,8 @@
+{
+  "solution": "TextEdit.sln",
+  "solutionFolder": null,
+  "mappings": {
+    "ImGui.NET": "../ImGui.NET/src/ImGui.NET/ImGui.NET.csproj"
+  },
+  "removeProjects": true
+}

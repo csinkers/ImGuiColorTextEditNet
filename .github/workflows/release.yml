@@ -1,0 +1,32 @@
+name: release
+
+on:
+  push:
+    tags: ["*.*.*"]
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4.2.2
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4.3.0
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Build with dotnet
+      env:
+        MINVER_VERSION: ${{ vars.MINVER_VERSION }}
+      run: dotnet build --configuration Release ../../src/TextEdit/ImGuiColorTextEditNet.csproj
+
+    - name: Push to NuGet
+      env:
+        SOURCE: ${{ secrets.NUGET_SOURCE }}
+        API_KEY: ${{ secrets.NUGET_API_KEY }}
+      if: env.SOURCE != '' || env.API_KEY != ''
+      run: dotnet nuget push ./**/*.nupkg --source ${{ env.SOURCE }} --api-key ${{ env.API_KEY }}
+

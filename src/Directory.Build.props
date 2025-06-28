@@ -3,6 +3,7 @@
   <PropertyGroup>
     <BaseOutputPath>$(MSBuildThisFileDirectory)\..\build\$(MSBuildProjectName)\bin</BaseOutputPath>
     <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)\..\build\$(MSBuildProjectName)\obj</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)\$(Configuration)</IntermediateOutputPath>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 </Project>
