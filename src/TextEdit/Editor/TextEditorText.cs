@@ -222,7 +222,7 @@ internal class TextEditorText
             end = line.Glyphs.Count;
 
         for (int i = start; i < end; i++)
-            sb.Append(line.Glyphs[i]);
+            sb.Append(line.Glyphs[i].Char);
 
         line.Glyphs.RemoveRange(start, end - start);
         return sb.ToString();
