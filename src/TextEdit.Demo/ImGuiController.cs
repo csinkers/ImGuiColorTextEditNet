@@ -61,8 +61,6 @@ namespace TextEdit.Demo
 
             CreateDeviceResources(gd, outputDescription);
             SetPerFrameImGuiData(1f / 60f);
-            ImGui.NewFrame();
-            _frameBegun = true;
         }
 
         public void WindowResized(int width, int height)

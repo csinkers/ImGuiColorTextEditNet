@@ -44,24 +44,26 @@ public static class Program
             controller.WindowResized(window.Width, window.Height);
         };
 
-        var demoText = @"#include <stdio.h>
+        var demoText =
+            """
+            #include <stdio.h>
 
-void main(int argc, char **argv) {
-	printf(""Hello world!\n"");
-	/* A multi-line
-	comment which continues on
-	to here */
+            void main(int argc, char **argv) {
+                printf("Hello world!\n");
+                /* A multi-line
+                comment which continues on
+                to here */
 
-	for (int i = 0; i < 10; i++)
-		printf(""%d\n"", i); // Breakpoint here
+                for (int i = 0; i < 10; i++)
+                    printf("%d\n", i); // Breakpoint here
 
-	// A single line comment
-	int a = 123456;
-	int b = 0x123456; // and here
-	int c = 0b110101;
-    errors on this line!
-}
-";
+                // A single line comment
+                int a = 123456;
+                int b = 0x123456; // and here
+                int c = 0b110101;
+                errors on this line!
+            }
+            """;
 
         var editor = new TextEditor
         {
