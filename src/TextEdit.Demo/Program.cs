@@ -17,7 +17,7 @@ public static class Program
             WindowWidth = 960,
             WindowHeight = 960,
             WindowInitialState = WindowState.Normal,
-            WindowTitle = "TextEdit.Test"
+            WindowTitle = "TextEdit.Test",
         };
 
         var gdOptions = new GraphicsDeviceOptions(
@@ -27,15 +27,22 @@ public static class Program
             ResourceBindingModel.Improved,
             true,
             true,
-            false);
+            false
+        );
 
         VeldridStartup.CreateWindowAndGraphicsDevice(
             windowInfo,
             gdOptions,
             out var window,
-            out var gd);
+            out var gd
+        );
 
-        var controller = new ImGuiController(gd, gd.MainSwapchain.Framebuffer.OutputDescription, window.Width, window.Height);
+        var controller = new ImGuiController(
+            gd,
+            gd.MainSwapchain.Framebuffer.OutputDescription,
+            window.Width,
+            window.Height
+        );
         var font = SetupFont(controller);
 
         var cl = gd.ResourceFactory.CreateCommandList();
@@ -45,8 +52,7 @@ public static class Program
             controller.WindowResized(window.Width, window.Height);
         };
 
-        var demoText =
-            """
+        var demoText = """
             #include <stdio.h>
 
             void main(int argc, char **argv) {
@@ -69,7 +75,7 @@ public static class Program
         var editor = new TextEditor
         {
             AllText = demoText,
-            SyntaxHighlighter = new CStyleHighlighter(true)
+            SyntaxHighlighter = new CStyleHighlighter(true),
         };
 
         var demoBreakpoints = new (int, object)[] { (10, ""), (14, "") };
@@ -106,12 +112,22 @@ public static class Program
                 editor.ErrorMarkers.SetErrorMarkers(demoErrors);
             }
 
-            ImGui.SameLine(); if (ImGui.Button("err line")) editor.AppendLine("Some error text", PaletteIndex.Custom);
-            ImGui.SameLine(); if (ImGui.Button("warn line")) editor.AppendLine("Some warning text", PaletteIndex.Custom + 1);
-            ImGui.SameLine(); if (ImGui.Button("info line")) editor.AppendLine("Some info text", PaletteIndex.Custom + 2);
-            ImGui.SameLine(); if (ImGui.Button("verbose line")) editor.AppendLine("Some debug text", PaletteIndex.Custom + 3);
+            ImGui.SameLine();
+            if (ImGui.Button("err line"))
+                editor.AppendLine("Some error text", PaletteIndex.Custom);
+            ImGui.SameLine();
+            if (ImGui.Button("warn line"))
+                editor.AppendLine("Some warning text", PaletteIndex.Custom + 1);
+            ImGui.SameLine();
+            if (ImGui.Button("info line"))
+                editor.AppendLine("Some info text", PaletteIndex.Custom + 2);
+            ImGui.SameLine();
+            if (ImGui.Button("verbose line"))
+                editor.AppendLine("Some debug text", PaletteIndex.Custom + 3);
 
-            ImGui.Text($"Cur:{editor.CursorPosition} SEL: {editor.Selection.Start} - {editor.Selection.End}");
+            ImGui.Text(
+                $"Cur:{editor.CursorPosition} SEL: {editor.Selection.Start} - {editor.Selection.End}"
+            );
             editor.Render("EditWindow");
 
             ImGui.End();
@@ -147,10 +163,12 @@ public static class Program
         var font = io.Fonts.AddFontFromFileTTF(
             fontPath,
             16, // size in pixels
-            nativeConfig);
+            nativeConfig
+        );
 
         if (font.NativePtr == (ImFont*)0)
             throw new InvalidOperationException("Font could not be loaded");
+
         controller.RecreateFontDeviceTexture();
 
         io.FontGlobalScale = 2.0f;

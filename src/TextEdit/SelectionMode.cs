@@ -10,5 +10,5 @@ public enum SelectionMode
     Word,
 
     /// <summary>Selects text by lines, allowing for quick selection of entire lines of text.</summary>
-    Line
+    Line,
 }

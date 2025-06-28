@@ -4,14 +4,17 @@ using System.Collections.Generic;
 
 namespace ImGuiColorTextEditNet;
 
-internal class SimpleTrie<TInfo> where TInfo : class
+internal class SimpleTrie<TInfo>
+    where TInfo : class
 {
     class Node
     {
         public readonly string Path;
         public TInfo? Info;
         public readonly Dictionary<char, Node> Children = new();
+
         public Node(string path) => Path = path;
+
         public override string ToString() => $"{Path} ({Children.Count}): {Info}";
     }
 

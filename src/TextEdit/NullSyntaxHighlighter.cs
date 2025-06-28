@@ -6,6 +6,7 @@ namespace ImGuiColorTextEditNet;
 public class NullSyntaxHighlighter : ISyntaxHighlighter
 {
     static readonly object DefaultState = new();
+
     NullSyntaxHighlighter() { }
 
     /// <summary>Singleton instance of the <see cref="NullSyntaxHighlighter"/> class.</summary>

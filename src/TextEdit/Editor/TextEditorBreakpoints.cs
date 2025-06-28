@@ -50,6 +50,7 @@ public class TextEditorBreakpoints
             int newIndex = kvp.Key >= index ? kvp.Key + 1 : kvp.Key;
             newBreakpoints[newIndex] = kvp.Value;
         }
+
         _breakpoints = newBreakpoints;
     }
 

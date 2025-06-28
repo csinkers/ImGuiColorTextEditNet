@@ -3,7 +3,8 @@ using System.Collections.Generic;
 
 namespace ImGuiColorTextEditNet;
 
-internal class SimpleCache<TKey, TValue> where TKey : notnull
+internal class SimpleCache<TKey, TValue>
+    where TKey : notnull
 {
     const int CyclePeriod = 500;
 
@@ -18,8 +19,8 @@ internal class SimpleCache<TKey, TValue> where TKey : notnull
     int _hits;
     int _requests;
 
-    public override string ToString()
-        => $"Cache for {_name}. Hit rate {100.0f * _hits / _requests:F1}%, size {_cache.Count} + {_lastCache.Count}";
+    public override string ToString() =>
+        $"Cache for {_name}. Hit rate {100.0f * _hits / _requests:F1}%, size {_cache.Count} + {_lastCache.Count}";
 #else
     public override string ToString() => $"Cache for {_name}";
 #endif

@@ -13,16 +13,19 @@ public class TextEditorRenderer
     const float LineSpacing = 1.0f;
     const int LeftMargin = 10;
     const int CursorBlinkPeriodMs = 800;
+    const uint MagentaUInt = 0xff00ffff;
     static readonly Vector4 MagentaVec4 = new(1.0f, 1.0f, 1.0f, 1.0f);
-    static readonly uint MagentaUInt = 0xff00ffff;
 
     // Note: if fonts / sizes can ever be changed the char width cache will need to be invalidated.
-    readonly SimpleCache<char, float> _charWidthCache = new("char widths", x =>
-    {
-        var font = ImGui.GetFont();
-        float scale = ImGui.GetFontSize() / font.FontSize;
-        return font.GetCharAdvance(x) * scale;
-    });
+    readonly SimpleCache<char, float> _charWidthCache = new(
+        "char widths",
+        x =>
+        {
+            var font = ImGui.GetFont();
+            float scale = ImGui.GetFontSize() / font.FontSize;
+            return font.GetCharAdvance(x) * scale;
+        }
+    );
 
     readonly SimpleCache<int, string> _lineNumberCache = new("line numbers", x => $"{x} ");
     readonly TextEditorSelection _selection;
@@ -108,32 +111,35 @@ public class TextEditorRenderer
     }
 
     uint ColorUInt(PaletteIndex index) =>
-        _uintPalette == null || (int)index >= _uintPalette.Length 
+        _uintPalette == null || (int)index >= _uintPalette.Length
             ? MagentaUInt
             : _uintPalette[(int)index];
 
     Vector4 ColorVec(PaletteIndex index) =>
-        _vec4Palette == null || (int)index > _vec4Palette.Length 
-            ? MagentaVec4 
+        _vec4Palette == null || (int)index > _vec4Palette.Length
+            ? MagentaVec4
             : _vec4Palette[(int)index];
-
 
     internal void Render(string title, Vector2 size)
     {
-        var background = _vec4Palette == null
-            ? ImGui.ColorConvertU32ToFloat4(_palette[(int)PaletteIndex.Background])
-            : ColorVec(PaletteIndex.Background);
+        var background =
+            _vec4Palette == null
+                ? ImGui.ColorConvertU32ToFloat4(_palette[(int)PaletteIndex.Background])
+                : ColorVec(PaletteIndex.Background);
 
         ImGui.PushStyleColor(ImGuiCol.ChildBg, background);
         ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(0.0f, 0.0f));
 
         if (!IsImGuiChildIgnored)
         {
-            ImGui.BeginChild(title, size, 
+            ImGui.BeginChild(
+                title,
+                size,
                 ImGuiChildFlags.None,
                 ImGuiWindowFlags.HorizontalScrollbar
-                | ImGuiWindowFlags.AlwaysHorizontalScrollbar
-                | ImGuiWindowFlags.NoMove);
+                    | ImGuiWindowFlags.AlwaysHorizontalScrollbar
+                    | ImGuiWindowFlags.NoMove
+            );
         }
 
         if (IsHandleKeyboardInputsEnabled && KeyboardInput != null)
@@ -202,7 +208,13 @@ public class TextEditorRenderer
 
         var lineNo = (int)MathF.Floor(scrollY / _charAdvance.Y);
         var globalLineMax = _text.LineCount;
-        var lineMax = Math.Max(0, Math.Min(globalLineMax - 1, lineNo + (int)MathF.Floor((scrollY + contentSize.Y) / _charAdvance.Y)));
+        var lineMax = Math.Max(
+            0,
+            Math.Min(
+                globalLineMax - 1,
+                lineNo + (int)MathF.Floor((scrollY + contentSize.Y) / _charAdvance.Y)
+            )
+        );
 
         // Deduce _textStart by evaluating _lines size (global lineMax) plus two spaces as text width
         float spaceWidth = _charWidthCache.Get(' ');
@@ -211,7 +223,7 @@ public class TextEditorRenderer
 
         if (globalLineMax != 0)
         {
-            for (;lineNo <= lineMax; ++lineNo)
+            for (; lineNo <= lineMax; ++lineNo)
             {
                 RenderInnerLine(
                     cursorScreenPos,
@@ -219,7 +231,8 @@ public class TextEditorRenderer
                     drawList,
                     contentSize.X,
                     spaceWidth,
-                    ref longest);
+                    ref longest
+                );
             }
 
             if (ImGui.IsMousePosValid())
@@ -241,15 +254,27 @@ public class TextEditorRenderer
         ImGui.Dummy(new(longest + 2, globalLineMax * _charAdvance.Y));
     }
 
-    void RenderInnerLine(Vector2 cursorScreenPos, int lineNo, ImDrawListPtr drawList, float contentWidth, float spaceWidth, ref float longest)
+    void RenderInnerLine(
+        Vector2 cursorScreenPos,
+        int lineNo,
+        ImDrawListPtr drawList,
+        float contentWidth,
+        float spaceWidth,
+        ref float longest
+    )
     {
-        Vector2 lineStartScreenPos = cursorScreenPos with { Y = cursorScreenPos.Y + lineNo * _charAdvance.Y };
+        Vector2 lineStartScreenPos = cursorScreenPos with
+        {
+            Y = cursorScreenPos.Y + lineNo * _charAdvance.Y,
+        };
+
         Vector2 textScreenPos = lineStartScreenPos with { X = lineStartScreenPos.X + _textStart };
 
         var line = _text.GetLine(lineNo);
         longest = Math.Max(
             _textStart + TextDistanceToLineStart((lineNo, _text.GetLineMaxColumn(lineNo))),
-            longest);
+            longest
+        );
 
         Coordinates lineStartCoord = new(lineNo, 0);
         Coordinates lineEndCoord = new(lineNo, _text.GetLineMaxColumn(lineNo));
@@ -260,18 +285,39 @@ public class TextEditorRenderer
 
         Util.Assert(_selection.Start <= _selection.End);
         if (_selection.Start <= lineEndCoord)
-            selectionStart = _selection.Start > lineStartCoord ? TextDistanceToLineStart(_selection.Start) : 0.0f;
+        {
+            selectionStart =
+                _selection.Start > lineStartCoord
+                    ? TextDistanceToLineStart(_selection.Start)
+                    : 0.0f;
+        }
 
         if (_selection.End > lineStartCoord)
-            selectionEnd = TextDistanceToLineStart(_selection.End < lineEndCoord ? _selection.End : lineEndCoord);
+        {
+            selectionEnd = TextDistanceToLineStart(
+                _selection.End < lineEndCoord ? _selection.End : lineEndCoord
+            );
+        }
 
         if (_selection.End.Line > lineNo && line.Length == 0)
             selectionEnd += _charAdvance.X;
 
-        if (!float.IsNegativeInfinity(selectionStart) && !float.IsNegativeInfinity(selectionEnd) && selectionStart < selectionEnd)
+        if (
+            !float.IsNegativeInfinity(selectionStart)
+            && !float.IsNegativeInfinity(selectionEnd)
+            && selectionStart < selectionEnd
+        )
         {
-            Vector2 vstart = lineStartScreenPos with { X = lineStartScreenPos.X + _textStart + selectionStart };
-            Vector2 vend = new(lineStartScreenPos.X + _textStart + selectionEnd, lineStartScreenPos.Y + _charAdvance.Y);
+            Vector2 vstart = lineStartScreenPos with
+            {
+                X = lineStartScreenPos.X + _textStart + selectionStart,
+            };
+
+            Vector2 vend = new(
+                lineStartScreenPos.X + _textStart + selectionEnd,
+                lineStartScreenPos.Y + _charAdvance.Y
+            );
+
             drawList.AddRectFilled(vstart, vend, ColorUInt(PaletteIndex.Selection));
         }
 
@@ -283,7 +329,8 @@ public class TextEditorRenderer
         {
             var end = new Vector2(
                 lineStartScreenPos.X + contentWidth + 2.0f * scrollX,
-                lineStartScreenPos.Y + _charAdvance.Y);
+                lineStartScreenPos.Y + _charAdvance.Y
+            );
 
             drawList.AddRectFilled(start, end, ColorUInt(PaletteIndex.Breakpoint));
         }
@@ -292,7 +339,8 @@ public class TextEditorRenderer
         {
             var end = new Vector2(
                 lineStartScreenPos.X + contentWidth + 2.0f * scrollX,
-                lineStartScreenPos.Y + _charAdvance.Y);
+                lineStartScreenPos.Y + _charAdvance.Y
+            );
 
             var color = ColorUInt(PaletteIndex.ExecutingLine);
             drawList.AddRectFilled(start, end, color);
@@ -303,7 +351,8 @@ public class TextEditorRenderer
         {
             var end = new Vector2(
                 lineStartScreenPos.X + contentWidth + 2.0f * scrollX,
-                lineStartScreenPos.Y + _charAdvance.Y);
+                lineStartScreenPos.Y + _charAdvance.Y
+            );
 
             drawList.AddRectFilled(start, end, ColorUInt(PaletteIndex.ErrorMarker));
 
@@ -326,9 +375,13 @@ public class TextEditorRenderer
 
         var lineNoWidth = ImGui.CalcTextSize(buf).X;
         drawList.AddText(
-            lineStartScreenPos with { X = lineStartScreenPos.X + _textStart - lineNoWidth },
+            lineStartScreenPos with
+            {
+                X = lineStartScreenPos.X + _textStart - lineNoWidth,
+            },
             ColorUInt(PaletteIndex.LineNumber),
-            buf);
+            buf
+        );
 
         if (_selection.Cursor.Line == lineNo)
         {
@@ -341,7 +394,14 @@ public class TextEditorRenderer
                 drawList.AddRectFilled(
                     start,
                     end,
-                    ColorUInt((focused ? PaletteIndex.CurrentLineFill : PaletteIndex.CurrentLineFillInactive)));
+                    ColorUInt(
+                        (
+                            focused
+                                ? PaletteIndex.CurrentLineFill
+                                : PaletteIndex.CurrentLineFillInactive
+                        )
+                    )
+                );
 
                 drawList.AddRect(start, end, ColorUInt(PaletteIndex.CurrentLineEdge), 1.0f);
             }
@@ -351,6 +411,7 @@ public class TextEditorRenderer
             {
                 var timeEnd = DateTime.UtcNow;
                 var elapsed = timeEnd - _startTime;
+
                 if (elapsed.Milliseconds > CursorBlinkPeriodMs / 2)
                 {
                     float width = 1.0f;
@@ -362,7 +423,9 @@ public class TextEditorRenderer
                         var c = line[cindex].Char;
                         if (c == '\t')
                         {
-                            var x = (1.0f + MathF.Floor((1.0f + cx) / (_text.TabSize * spaceWidth))) * (_text.TabSize * spaceWidth);
+                            var x =
+                                (1.0f + MathF.Floor((1.0f + cx) / (_text.TabSize * spaceWidth)))
+                                * (_text.TabSize * spaceWidth);
                             width = x - cx;
                         }
                         else
@@ -372,8 +435,13 @@ public class TextEditorRenderer
                     }
 
                     Vector2 cstart = lineStartScreenPos with { X = textScreenPos.X + cx };
-                    Vector2 cend = new(textScreenPos.X + cx + width, lineStartScreenPos.Y + _charAdvance.Y);
+                    Vector2 cend = new(
+                        textScreenPos.X + cx + width,
+                        lineStartScreenPos.Y + _charAdvance.Y
+                    );
+
                     drawList.AddRectFilled(cstart, cend, ColorUInt(PaletteIndex.Cursor));
+
                     if (elapsed.Milliseconds > CursorBlinkPeriodMs)
                         _startTime = timeEnd;
                 }
@@ -381,27 +449,35 @@ public class TextEditorRenderer
         }
 
         // Render colorized text
-        uint prevColor = line.Length == 0 ? ColorUInt(PaletteIndex.Default) : ColorUInt(line[0].ColorIndex);
+        uint prevColor =
+            line.Length == 0 ? ColorUInt(PaletteIndex.Default) : ColorUInt(line[0].ColorIndex);
         var bufferOffset = new Vector2();
 
-        for (int i = 0; i < line.Length;)
+        for (int i = 0; i < line.Length; )
         {
             var glyph = line[i];
             var color = ColorUInt(glyph.ColorIndex);
 
             if ((color != prevColor || glyph.Char is '\t' or ' ') && _lineBuffer.Length != 0)
             {
-                Vector2 newOffset = new(textScreenPos.X + bufferOffset.X, textScreenPos.Y + bufferOffset.Y);
+                Vector2 newOffset = new(
+                    textScreenPos.X + bufferOffset.X,
+                    textScreenPos.Y + bufferOffset.Y
+                );
+
                 var textSize = DrawText(drawList, newOffset, prevColor, _lineBuffer);
                 bufferOffset.X += textSize.X;
                 _lineBuffer.Clear();
             }
+
             prevColor = color;
 
             if (glyph.Char == '\t')
             {
                 var oldX = bufferOffset.X;
-                bufferOffset.X = (1.0f + MathF.Floor((1.0f + bufferOffset.X) / (_text.TabSize * spaceWidth))) * (_text.TabSize * spaceWidth);
+                bufferOffset.X =
+                    (1.0f + MathF.Floor((1.0f + bufferOffset.X) / (_text.TabSize * spaceWidth)))
+                    * (_text.TabSize * spaceWidth);
                 ++i;
 
                 if (IsShowingWhitespace)
@@ -430,6 +506,7 @@ public class TextEditorRenderer
                     var y = textScreenPos.Y + bufferOffset.Y + s * 0.5f;
                     drawList.AddCircleFilled(new(x, y), 1.5f, 0x80808080, 4);
                 }
+
                 bufferOffset.X += spaceWidth;
                 i++;
             }
@@ -455,9 +532,8 @@ public class TextEditorRenderer
 
         try
         {
-            Span<char> temp = sb.Length > 1024
-                ? tempArray.AsSpan(0, sb.Length)
-                : stackalloc char[sb.Length];
+            Span<char> temp =
+                sb.Length > 1024 ? tempArray.AsSpan(0, sb.Length) : stackalloc char[sb.Length];
 
             int i = 0;
 
@@ -485,7 +561,7 @@ public class TextEditorRenderer
 
         int colIndex = _text.GetCharacterIndex(position);
         PaletteIndex lastColor = 0;
-        for (int i = 0; i < line.Length && i < colIndex;)
+        for (int i = 0; i < line.Length && i < colIndex; )
         {
             var glyph = line[i];
             if (lastColor != glyph.ColorIndex && glyph.Char != ' ')
@@ -499,7 +575,8 @@ public class TextEditorRenderer
             var c = glyph.Char;
             distance =
                 c == '\t'
-                    ? (1.0f + MathF.Floor((1.0f + distance) / (_text.TabSize * spaceSize))) * (_text.TabSize * spaceSize)
+                    ? (1.0f + MathF.Floor((1.0f + distance) / (_text.TabSize * spaceSize)))
+                        * (_text.TabSize * spaceSize)
                     : distance + _charWidthCache.Get(c);
 
             i++;
@@ -558,8 +635,12 @@ public class TextEditorRenderer
                 {
                     float spaceSize = _charWidthCache.Get(' ');
                     float oldX = columnX;
-                    float newColumnX = (1.0f + MathF.Floor((1.0f + columnX) / (_text.TabSize * spaceSize))) * (_text.TabSize * spaceSize);
+                    float newColumnX =
+                        (1.0f + MathF.Floor((1.0f + columnX) / (_text.TabSize * spaceSize)))
+                        * (_text.TabSize * spaceSize);
+
                     columnWidth = newColumnX - oldX;
+
                     if (_textStart + columnX + columnWidth * 0.5f > local.X)
                         break;
 

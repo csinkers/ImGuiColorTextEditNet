@@ -29,7 +29,7 @@ public static class Palettes
         0x40000000, // Current line fill
         0x40808080, // Current line fill (inactive)
         0x40a0a0a0, // Current line edge
-        0xa0a0a0a0 // Executing Line
+        0xa0a0a0a0, // Executing Line
     ];
 
     /// <summary>Default light theme</summary>
@@ -56,7 +56,7 @@ public static class Palettes
         0x40000000, // Current line fill
         0x40808080, // Current line fill (inactive)
         0x40000000, // Current line edge
-        0xa0a0a0a0 // Executing Line
+        0xa0a0a0a0, // Executing Line
     ];
 
     /// <summary>Default blue theme</summary>
@@ -83,6 +83,6 @@ public static class Palettes
         0x40000000, // Current line fill
         0x40808080, // Current line fill (inactive)
         0x40000000, // Current line edge
-        0xa0a0a0a0 // Executing Line
+        0xa0a0a0a0, // Executing Line
     ];
 }

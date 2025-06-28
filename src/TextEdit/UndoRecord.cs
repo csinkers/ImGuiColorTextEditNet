@@ -44,14 +44,18 @@ internal class UndoRecord
         return sb.ToString();
     }
 
-    public UndoRecord()
-    {
-    }
+    public UndoRecord() { }
 
     public UndoRecord(
-        string added, Coordinates addedStart, Coordinates addedEnd,
-        string removed, Coordinates removedStart, Coordinates removedEnd,
-        SelectionState before, SelectionState after)
+        string added,
+        Coordinates addedStart,
+        Coordinates addedEnd,
+        string removed,
+        Coordinates removedStart,
+        Coordinates removedEnd,
+        SelectionState before,
+        SelectionState after
+    )
     {
         Util.Assert(AddedStart <= AddedEnd);
         Util.Assert(RemovedStart <= RemovedEnd);
@@ -80,6 +84,6 @@ internal class UndoRecord
             RemovedEnd = RemovedEnd.ToString(),
 
             Before = Before.ToString(),
-            After = After.ToString()
+            After = After.ToString(),
         };
 }

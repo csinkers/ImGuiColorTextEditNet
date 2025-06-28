@@ -46,7 +46,7 @@ public class TextEditor
         Text = new(Options);
         Selection = new(Text);
         Breakpoints = new(Text);
-        ErrorMarkers =  new(Text);
+        ErrorMarkers = new(Text);
         Color = new(Options, Text);
         Movement = new(Selection, Text);
         UndoStack = new(Text, Color, Options, Selection);
@@ -54,7 +54,7 @@ public class TextEditor
         Renderer = new(this, Palettes.Dark)
         {
             KeyboardInput = new StandardKeyboardInput(this),
-            MouseInput = new StandardMouseInput(this)
+            MouseInput = new StandardMouseInput(this),
         };
     }
 
@@ -62,10 +62,18 @@ public class TextEditor
     public int TotalLines => Text.LineCount;
 
     /// <summary>Gets or sets the complete text content of the editor, including all lines.</summary>
-    public string AllText { get => Text.GetText((0, 0), (Text.LineCount, 0)); set => Text.SetText(value); }
+    public string AllText
+    {
+        get => Text.GetText((0, 0), (Text.LineCount, 0));
+        set => Text.SetText(value);
+    }
 
     /// <summary>Gets or sets the lines of text in the editor.</summary>
-    public IList<string> TextLines { get => Text.TextLines; set => Text.TextLines = value; }
+    public IList<string> TextLines
+    {
+        get => Text.TextLines;
+        set => Text.TextLines = value;
+    }
 
     /// <summary>Appends a line of text to the end of the editor.</summary>
     public void AppendLine(string text)
@@ -92,21 +100,27 @@ public class TextEditor
     }
 
     /// <summary>Gets or sets the syntax highlighter used for syntax highlighting in the text editor.</summary>
-    public ISyntaxHighlighter SyntaxHighlighter { get => Color.SyntaxHighlighter; set => Color.SyntaxHighlighter = value; }
+    public ISyntaxHighlighter SyntaxHighlighter
+    {
+        get => Color.SyntaxHighlighter;
+        set => Color.SyntaxHighlighter = value;
+    }
 
     /// <summary>Sets the color for a specific palette index in the text editor.</summary>
     public void SetColor(PaletteIndex color, uint abgr) => Renderer.SetColor(color, abgr);
 
     /// <summary>Gets or sets the tab size, which determines the number of spaces used for a tab character.</summary>
-    public int TabSize { get => Text.TabSize; set => Text.TabSize = value; }
+    public int TabSize
+    {
+        get => Text.TabSize;
+        set => Text.TabSize = value;
+    }
 
     /// <summary>Gets the text of the current line where the cursor is located.</summary>
     public string GetCurrentLineText()
     {
         var lineLength = Text.GetLineMaxColumn(Selection.Cursor.Line);
-        return Text.GetText(
-                (Selection.Cursor.Line, 0),
-                (Selection.Cursor.Line, lineLength));
+        return Text.GetText((Selection.Cursor.Line, 0), (Selection.Cursor.Line, lineLength));
     }
 
     /// <summary>Gets or sets the current cursor position in the text editor.</summary>
@@ -115,7 +129,8 @@ public class TextEditor
         get => Selection.GetActualCursorCoordinates();
         set
         {
-            if (Selection.Cursor == value) return;
+            if (Selection.Cursor == value)
+                return;
             Selection.Cursor = value;
             ScrollToLine(value.Line);
         }
@@ -154,4 +169,3 @@ public class TextEditor
     /// <summary>Scrolls the text editor to a specific line number, making it visible in the viewport.</summary>
     public void ScrollToLine(int lineNumber) => Text.PendingScrollRequest = lineNumber;
 }
-

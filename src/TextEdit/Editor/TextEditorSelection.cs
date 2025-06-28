@@ -26,7 +26,6 @@ public class TextEditorSelection
     /// <summary>Gets or sets the line number that is highlighted (if any).</summary>
     public int? HighlightedLine { get; set; }
 
-
     /// <summary>Gets or sets the current cursor position.</summary>
     public Coordinates Cursor
     {
@@ -68,7 +67,8 @@ public class TextEditorSelection
         };
 
     /// <summary>Selects the word that is currently under the cursor.</summary>
-    public void SelectWordUnderCursor() => Select(_text.FindWordStart(Cursor), _text.FindWordEnd(Cursor));
+    public void SelectWordUnderCursor() =>
+        Select(_text.FindWordStart(Cursor), _text.FindWordEnd(Cursor));
 
     /// <summary>Selects all text.</summary>
     public void SelectAll() => Select((0, 0), (_text.LineCount, 0));
@@ -77,7 +77,11 @@ public class TextEditorSelection
     public bool HasSelection => End > Start;
 
     /// <summary>Selects a range of text based on the specified start and end coordinates.</summary>
-    public void Select(Coordinates start, Coordinates end, SelectionMode mode = SelectionMode.Normal)
+    public void Select(
+        Coordinates start,
+        Coordinates end,
+        SelectionMode mode = SelectionMode.Normal
+    )
     {
         _state.Start = _text.SanitizeCoordinates(start);
         End = _text.SanitizeCoordinates(end);

@@ -38,7 +38,9 @@ public class TextEditorMovement
             }
         }
         else
+        {
             _selection.InteractiveStart = _selection.InteractiveEnd = _selection.Cursor;
+        }
 
         _selection.Select(_selection.InteractiveStart, _selection.InteractiveEnd);
         _text.PendingScrollRequest = _selection.Cursor.Line;
@@ -70,7 +72,9 @@ public class TextEditorMovement
             }
         }
         else
+        {
             _selection.InteractiveStart = _selection.InteractiveEnd = _selection.Cursor;
+        }
 
         _selection.Select(_selection.InteractiveStart, _selection.InteractiveEnd);
         _text.PendingScrollRequest = _selection.Cursor.Line;
@@ -98,7 +102,9 @@ public class TextEditorMovement
                 }
             }
             else
+            {
                 --cindex;
+            }
 
             _selection.Cursor = (line, _text.GetCharacterColumn(line, cindex));
             if (isWordMode)
@@ -124,9 +130,15 @@ public class TextEditorMovement
             }
         }
         else
+        {
             _selection.InteractiveStart = _selection.InteractiveEnd = _selection.Cursor;
+        }
 
-        _selection.Select(_selection.InteractiveStart, _selection.InteractiveEnd, isSelecting && isWordMode ? SelectionMode.Word : SelectionMode.Normal);
+        _selection.Select(
+            _selection.InteractiveStart,
+            _selection.InteractiveEnd,
+            isSelecting && isWordMode ? SelectionMode.Word : SelectionMode.Normal
+        );
         _text.PendingScrollRequest = _selection.Cursor.Line;
     }
 
@@ -146,9 +158,16 @@ public class TextEditorMovement
             if (cindex >= line.Length)
             {
                 if (_selection.Cursor.Line < _text.LineCount - 1)
-                    _selection.Cursor = (Math.Max(0, Math.Min(_text.LineCount - 1, _selection.Cursor.Line + 1)), 0);
+                {
+                    _selection.Cursor = (
+                        Math.Max(0, Math.Min(_text.LineCount - 1, _selection.Cursor.Line + 1)),
+                        0
+                    );
+                }
                 else
+                {
                     return;
+                }
             }
             else
             {
@@ -172,9 +191,16 @@ public class TextEditorMovement
             }
         }
         else
+        {
             _selection.InteractiveStart = _selection.InteractiveEnd = _selection.Cursor;
+        }
 
-        _selection.Select(_selection.InteractiveStart, _selection.InteractiveEnd, isSelecting && isWordMode ? SelectionMode.Word : SelectionMode.Normal);
+        _selection.Select(
+            _selection.InteractiveStart,
+            _selection.InteractiveEnd,
+            isSelecting && isWordMode ? SelectionMode.Word : SelectionMode.Normal
+        );
+
         _text.PendingScrollRequest = _selection.Cursor.Line;
     }
 
@@ -193,7 +219,9 @@ public class TextEditorMovement
             _selection.InteractiveStart = _selection.Cursor;
         }
         else
+        {
             _selection.InteractiveStart = _selection.InteractiveEnd = _selection.Cursor;
+        }
 
         _selection.Select(_selection.InteractiveStart, _selection.InteractiveEnd);
         _text.PendingScrollRequest = _selection.Cursor.Line;
@@ -212,7 +240,9 @@ public class TextEditorMovement
             _selection.InteractiveEnd = newPos;
         }
         else
+        {
             _selection.InteractiveStart = _selection.InteractiveEnd = newPos;
+        }
 
         _selection.Select(_selection.InteractiveStart, _selection.InteractiveEnd);
         _text.PendingScrollRequest = _selection.Cursor.Line;
@@ -239,7 +269,10 @@ public class TextEditorMovement
                 }
             }
             else
+            {
                 _selection.InteractiveStart = _selection.InteractiveEnd = _selection.Cursor;
+            }
+
             _selection.Select(_selection.InteractiveStart, _selection.InteractiveEnd);
         }
 
@@ -268,7 +301,9 @@ public class TextEditorMovement
             }
         }
         else
+        {
             _selection.InteractiveStart = _selection.InteractiveEnd = _selection.Cursor;
+        }
 
         _selection.Select(_selection.InteractiveStart, _selection.InteractiveEnd);
         _text.PendingScrollRequest = _selection.Cursor.Line;

@@ -35,7 +35,8 @@ public class BasicTests
     [TestMethod]
     public void MultiLineSetTextTest()
     {
-        const string text = @"abc
+        const string text =
+            @"abc
 def";
         var t = new TextEditor { AllText = text };
         Assert.AreEqual(text, t.AllText);
@@ -50,7 +51,8 @@ def";
     [TestMethod]
     public void TrailingNewlineSetTextTest()
     {
-        const string text = @"abc
+        const string text =
+            @"abc
 ";
         var t = new TextEditor { AllText = text };
         Assert.AreEqual(text, t.AllText);
@@ -90,7 +92,8 @@ def";
     [TestMethod]
     public void MultiLineSetTextLinesTest()
     {
-        const string text = @"abc
+        const string text =
+            @"abc
 def";
         var t = new TextEditor { TextLines = ["abc", "def"] };
 

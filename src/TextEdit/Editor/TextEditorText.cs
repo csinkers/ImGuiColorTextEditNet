@@ -28,8 +28,11 @@ internal class TextEditorText
     internal event LineAddedHandler? LineAdded;
     internal event LinesRemovedHandler? LinesRemoved;
 
-    internal ReadOnlySpan<Glyph> GetLine(int index) => CollectionsMarshal.AsSpan(_lines[index].Glyphs);
-    internal Span<Glyph> GetMutableLine(int index) => CollectionsMarshal.AsSpan(_lines[index].Glyphs);
+    internal ReadOnlySpan<Glyph> GetLine(int index) =>
+        CollectionsMarshal.AsSpan(_lines[index].Glyphs);
+
+    internal Span<Glyph> GetMutableLine(int index) =>
+        CollectionsMarshal.AsSpan(_lines[index].Glyphs);
 
     internal string GetLineText(int index)
     {
@@ -47,6 +50,7 @@ internal class TextEditorText
     }
 
     internal static bool IsBlank(char c) => c is ' ' or '\t';
+
     internal string GetText(Coordinates startPos, Coordinates endPos)
     {
         var lstart = startPos.Line;
@@ -241,7 +245,7 @@ internal class TextEditorText
     internal void InsertLine(int lineNumber, string text, PaletteIndex color = PaletteIndex.Default)
     {
         var line = new Line(new(text.Length));
-        foreach(var c in text)
+        foreach (var c in text)
             line.Glyphs.Add(new(c, color));
         InsertLine(lineNumber, line);
     }
@@ -264,7 +268,6 @@ internal class TextEditorText
     {
         Util.Assert(!_options.IsReadOnly);
         Util.Assert(_lines.Count != 0);
-
 
         if (c == '\r')
             return;
@@ -367,7 +370,7 @@ internal class TextEditorText
         int c = 0;
         int i = 0;
 
-        for (; i < line.Count && c < position.Column;)
+        for (; i < line.Count && c < position.Column; )
         {
             if (line[i].Char == '\t')
                 c = c / _tabSize * _tabSize + _tabSize;
@@ -392,6 +395,7 @@ internal class TextEditorText
         {
             var c = line[i].Char;
             i++;
+
             if (c == '\t')
                 col = col / _tabSize * _tabSize + _tabSize;
             else
@@ -409,13 +413,14 @@ internal class TextEditorText
         var line = _lines[lineNumber].Glyphs;
         int col = 0;
 
-        for (int i = 0; i < line.Count;)
+        for (int i = 0; i < line.Count; )
         {
             var c = line[i].Char;
             if (c == '\t')
                 col = col / _tabSize * _tabSize + _tabSize;
             else
                 col++;
+
             i++;
         }
 
@@ -429,6 +434,7 @@ internal class TextEditorText
 
         var line = _lines[position.Line].Glyphs;
         var cindex = GetCharacterIndex(position);
+
         if (cindex >= line.Count)
             return true;
 
@@ -442,45 +448,45 @@ internal class TextEditorText
     {
         var line = value.Line;
         var column = value.Column;
-        if (line >= _lines.Count)
-        {
-            if (_lines.Count == 0)
-            {
-                line = 0;
-                column = 0;
-            }
-            else
-            {
-                line = _lines.Count - 1;
-                column = GetLineMaxColumn(line);
-            }
-            return (line, column);
-        }
-        else
+        if (line < _lines.Count)
         {
             column = _lines.Count == 0 ? 0 : Math.Min(column, GetLineMaxColumn(line));
             return (line, column);
         }
+
+        if (_lines.Count == 0)
+        {
+            line = 0;
+            column = 0;
+        }
+        else
+        {
+            line = _lines.Count - 1;
+            column = GetLineMaxColumn(line);
+        }
+
+        return (line, column);
     }
 
     internal void Advance(Coordinates position)
     {
-        if (position.Line < _lines.Count)
-        {
-            var line = _lines[position.Line].Glyphs;
-            var cindex = GetCharacterIndex(position);
+        if (position.Line >= _lines.Count)
+            return;
 
-            if (cindex + 1 < line.Count)
-            {
-                cindex = Math.Min(cindex + 1, line.Count - 1);
-            }
-            else
-            {
-                ++position.Line;
-                cindex = 0;
-            }
-            position.Column = GetCharacterColumn(position.Line, cindex);
+        var line = _lines[position.Line].Glyphs;
+        var cindex = GetCharacterIndex(position);
+
+        if (cindex + 1 < line.Count)
+        {
+            cindex = Math.Min(cindex + 1, line.Count - 1);
         }
+        else
+        {
+            ++position.Line;
+            cindex = 0;
+        }
+
+        position.Column = GetCharacterColumn(position.Line, cindex);
     }
 
     internal Coordinates FindWordStart(Coordinates position)
@@ -545,6 +551,7 @@ internal class TextEditorText
             }
             cindex++;
         }
+
         return (position.Line, GetCharacterColumn(position.Line, cindex));
     }
 
@@ -558,6 +565,7 @@ internal class TextEditorText
         var cindex = GetCharacterIndex(from);
         bool isword = false;
         bool skip = false;
+
         if (cindex < _lines[at.Line].Glyphs.Count)
         {
             var line = _lines[at.Line].Glyphs;

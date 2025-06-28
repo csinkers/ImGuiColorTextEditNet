@@ -70,5 +70,5 @@ public enum PaletteIndex : ushort
     ExecutingLine,
 
     /// <summary>This index and any values higher than it are for custom user-controlled colors</summary>
-    Custom
+    Custom,
 }

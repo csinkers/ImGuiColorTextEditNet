@@ -15,7 +15,12 @@ internal class TextEditorUndoStack
     readonly List<UndoRecord> _undoBuffer = new();
     int _undoIndex;
 
-    internal TextEditorUndoStack(TextEditorText text, TextEditorColor color, TextEditorOptions options, TextEditorSelection selection)
+    internal TextEditorUndoStack(
+        TextEditorText text,
+        TextEditorColor color,
+        TextEditorOptions options,
+        TextEditorSelection selection
+    )
     {
         _text = text ?? throw new ArgumentNullException(nameof(text));
         _color = color ?? throw new ArgumentNullException(nameof(color));
@@ -32,7 +37,9 @@ internal class TextEditorUndoStack
 
     internal int UndoCount => _undoBuffer.Count; // Only for unit testing
     internal int UndoIndex => _undoIndex; // Only for unit testing
+
     internal bool CanUndo() => !_options.IsReadOnly && _undoIndex > 0;
+
     internal bool CanRedo() => !_options.IsReadOnly && _undoIndex < _undoBuffer.Count;
 
     internal void AddUndo(UndoRecord value)
@@ -67,14 +74,20 @@ internal class TextEditorUndoStack
         if (!string.IsNullOrEmpty(record.Added))
         {
             _text.DeleteRange(record.AddedStart, record.AddedEnd);
-            _color.InvalidateColor(record.AddedStart.Line - 1, record.AddedEnd.Line - record.AddedStart.Line + 2);
+            _color.InvalidateColor(
+                record.AddedStart.Line - 1,
+                record.AddedEnd.Line - record.AddedStart.Line + 2
+            );
         }
 
         if (!string.IsNullOrEmpty(record.Removed))
         {
             var start = record.RemovedStart;
             _text.InsertTextAt(start, record.Removed);
-            _color.InvalidateColor(record.RemovedStart.Line - 1, record.RemovedEnd.Line - record.RemovedStart.Line + 2);
+            _color.InvalidateColor(
+                record.RemovedStart.Line - 1,
+                record.RemovedEnd.Line - record.RemovedStart.Line + 2
+            );
         }
 
         _selection.Select(record.Before.Start, record.Before.End);
@@ -87,14 +100,20 @@ internal class TextEditorUndoStack
         if (!string.IsNullOrEmpty(record.Removed))
         {
             _text.DeleteRange(record.RemovedStart, record.RemovedEnd);
-            _color.InvalidateColor(record.RemovedStart.Line - 1, record.RemovedEnd.Line - record.RemovedStart.Line + 1);
+            _color.InvalidateColor(
+                record.RemovedStart.Line - 1,
+                record.RemovedEnd.Line - record.RemovedStart.Line + 1
+            );
         }
 
         if (!string.IsNullOrEmpty(record.Added))
         {
             var start = record.AddedStart;
             _text.InsertTextAt(start, record.Added);
-            _color.InvalidateColor(record.AddedStart.Line - 1, record.AddedEnd.Line - record.AddedStart.Line + 1);
+            _color.InvalidateColor(
+                record.AddedStart.Line - 1,
+                record.AddedEnd.Line - record.AddedStart.Line + 1
+            );
         }
 
         _selection.Select(record.After.Start, record.After.End);

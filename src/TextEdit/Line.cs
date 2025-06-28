@@ -15,7 +15,8 @@ public class Line
     public Line() => Glyphs = [];
 
     /// <summary>Initializes a new instance of the <see cref="Line"/> class with the specified list of glyphs.</summary>
-    public Line(List<Glyph> glyphs) => Glyphs = glyphs ?? throw new ArgumentNullException(nameof(glyphs));
+    public Line(List<Glyph> glyphs) =>
+        Glyphs = glyphs ?? throw new ArgumentNullException(nameof(glyphs));
 
     /// <summary>Appends a string to the line using the color of the last glyph, or the default color if there are no glyphs.</summary>
     public void Append(string s)

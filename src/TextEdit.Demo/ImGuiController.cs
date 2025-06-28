@@ -45,7 +45,12 @@ namespace TextEdit.Demo
         /// <summary>
         /// Constructs a new ImGuiController.
         /// </summary>
-        public ImGuiController(GraphicsDevice gd, OutputDescription outputDescription, int width, int height)
+        public ImGuiController(
+            GraphicsDevice gd,
+            OutputDescription outputDescription,
+            int width,
+            int height
+        )
         {
             _gd = gd;
             _windowWidth = width;
@@ -78,50 +83,114 @@ namespace TextEdit.Demo
         {
             _gd = gd;
             ResourceFactory factory = gd.ResourceFactory;
-            _vertexBuffer = factory.CreateBuffer(new BufferDescription(10000, BufferUsage.VertexBuffer | BufferUsage.Dynamic));
+            _vertexBuffer = factory.CreateBuffer(
+                new BufferDescription(10000, BufferUsage.VertexBuffer | BufferUsage.Dynamic)
+            );
             _vertexBuffer.Name = "ImGui.NET Vertex Buffer";
 
-            _indexBuffer = factory.CreateBuffer(new BufferDescription(2000, BufferUsage.IndexBuffer | BufferUsage.Dynamic));
+            _indexBuffer = factory.CreateBuffer(
+                new BufferDescription(2000, BufferUsage.IndexBuffer | BufferUsage.Dynamic)
+            );
             _indexBuffer.Name = "ImGui.NET Index Buffer";
 
-            _projMatrixBuffer = factory.CreateBuffer(new BufferDescription(64, BufferUsage.UniformBuffer | BufferUsage.Dynamic));
+            _projMatrixBuffer = factory.CreateBuffer(
+                new BufferDescription(64, BufferUsage.UniformBuffer | BufferUsage.Dynamic)
+            );
             _projMatrixBuffer.Name = "ImGui.NET Projection Buffer";
 
-            byte[] vertexShaderBytes = LoadEmbeddedShaderCode(gd.ResourceFactory, "imgui-vertex", ShaderStages.Vertex);
-            byte[] fragmentShaderBytes = LoadEmbeddedShaderCode(gd.ResourceFactory, "imgui-frag", ShaderStages.Fragment);
-            _vertexShader = factory.CreateShader(new ShaderDescription(ShaderStages.Vertex, vertexShaderBytes, gd.BackendType == GraphicsBackend.Metal ? "VS" : "main"));
-            _fragmentShader = factory.CreateShader(new ShaderDescription(ShaderStages.Fragment, fragmentShaderBytes, gd.BackendType == GraphicsBackend.Metal ? "FS" : "main"));
+            byte[] vertexShaderBytes = LoadEmbeddedShaderCode(
+                gd.ResourceFactory,
+                "imgui-vertex",
+                ShaderStages.Vertex
+            );
+            byte[] fragmentShaderBytes = LoadEmbeddedShaderCode(
+                gd.ResourceFactory,
+                "imgui-frag",
+                ShaderStages.Fragment
+            );
+            _vertexShader = factory.CreateShader(
+                new ShaderDescription(
+                    ShaderStages.Vertex,
+                    vertexShaderBytes,
+                    gd.BackendType == GraphicsBackend.Metal ? "VS" : "main"
+                )
+            );
+            _fragmentShader = factory.CreateShader(
+                new ShaderDescription(
+                    ShaderStages.Fragment,
+                    fragmentShaderBytes,
+                    gd.BackendType == GraphicsBackend.Metal ? "FS" : "main"
+                )
+            );
 
             VertexLayoutDescription[] vertexLayouts =
             [
                 new(
-                    new VertexElementDescription("in_position", VertexElementSemantic.Position, VertexElementFormat.Float2),
-                    new VertexElementDescription("in_texCoord", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float2),
-                    new VertexElementDescription("in_color", VertexElementSemantic.Color, VertexElementFormat.Byte4_Norm))
+                    new VertexElementDescription(
+                        "in_position",
+                        VertexElementSemantic.Position,
+                        VertexElementFormat.Float2
+                    ),
+                    new VertexElementDescription(
+                        "in_texCoord",
+                        VertexElementSemantic.TextureCoordinate,
+                        VertexElementFormat.Float2
+                    ),
+                    new VertexElementDescription(
+                        "in_color",
+                        VertexElementSemantic.Color,
+                        VertexElementFormat.Byte4_Norm
+                    )
+                ),
             ];
 
-            _layout = factory.CreateResourceLayout(new ResourceLayoutDescription(
-                new ResourceLayoutElementDescription("ProjectionMatrixBuffer", ResourceKind.UniformBuffer, ShaderStages.Vertex),
-                new ResourceLayoutElementDescription("MainSampler", ResourceKind.Sampler, ShaderStages.Fragment)));
+            _layout = factory.CreateResourceLayout(
+                new ResourceLayoutDescription(
+                    new ResourceLayoutElementDescription(
+                        "ProjectionMatrixBuffer",
+                        ResourceKind.UniformBuffer,
+                        ShaderStages.Vertex
+                    ),
+                    new ResourceLayoutElementDescription(
+                        "MainSampler",
+                        ResourceKind.Sampler,
+                        ShaderStages.Fragment
+                    )
+                )
+            );
 
-            _textureLayout = factory.CreateResourceLayout(new ResourceLayoutDescription(
-                new ResourceLayoutElementDescription("MainTexture", ResourceKind.TextureReadOnly, ShaderStages.Fragment)));
+            _textureLayout = factory.CreateResourceLayout(
+                new ResourceLayoutDescription(
+                    new ResourceLayoutElementDescription(
+                        "MainTexture",
+                        ResourceKind.TextureReadOnly,
+                        ShaderStages.Fragment
+                    )
+                )
+            );
 
             var pd = new GraphicsPipelineDescription(
                 BlendStateDescription.SingleAlphaBlend,
                 new DepthStencilStateDescription(false, false, ComparisonKind.Always),
-                new RasterizerStateDescription(FaceCullMode.None, PolygonFillMode.Solid, FrontFace.Clockwise, false, true),
+                new RasterizerStateDescription(
+                    FaceCullMode.None,
+                    PolygonFillMode.Solid,
+                    FrontFace.Clockwise,
+                    false,
+                    true
+                ),
                 PrimitiveTopology.TriangleList,
                 new ShaderSetDescription(vertexLayouts, [_vertexShader, _fragmentShader]),
                 [_layout, _textureLayout],
                 outputDescription,
-                ResourceBindingModel.Default);
+                ResourceBindingModel.Default
+            );
 
             _pipeline = factory.CreateGraphicsPipeline(ref pd);
 
-            _mainResourceSet = factory.CreateResourceSet(new ResourceSetDescription(_layout,
-                _projMatrixBuffer,
-                gd.PointSampler));
+            _mainResourceSet = factory.CreateResourceSet(
+                new ResourceSetDescription(_layout, _projMatrixBuffer, gd.PointSampler)
+            );
 
             RecreateFontDeviceTexture();
         }
@@ -134,7 +203,9 @@ namespace TextEdit.Demo
         {
             if (!_setsByView.TryGetValue(textureView, out ResourceSetInfo rsi))
             {
-                ResourceSet resourceSet = factory.CreateResourceSet(new ResourceSetDescription(_textureLayout, textureView));
+                ResourceSet resourceSet = factory.CreateResourceSet(
+                    new ResourceSetDescription(_textureLayout, textureView)
+                );
                 rsi = new ResourceSetInfo(GetNextImGuiBindingID(), resourceSet);
 
                 _setsByView.Add(textureView, rsi);
@@ -170,7 +241,9 @@ namespace TextEdit.Demo
         {
             if (!_viewsById.TryGetValue(imGuiBinding, out ResourceSetInfo tvi))
             {
-                throw new InvalidOperationException("No registered ImGui binding with id " + imGuiBinding);
+                throw new InvalidOperationException(
+                    "No registered ImGui binding with id " + imGuiBinding
+                );
             }
 
             return tvi.ResourceSet;
@@ -190,30 +263,34 @@ namespace TextEdit.Demo
             _lastAssignedID = 100;
         }
 
-        static byte[] LoadEmbeddedShaderCode(ResourceFactory factory, string name, ShaderStages stage)
+        static byte[] LoadEmbeddedShaderCode(
+            ResourceFactory factory,
+            string name,
+            ShaderStages stage
+        )
         {
             switch (factory.BackendType)
             {
                 case GraphicsBackend.Direct3D11:
-                    {
-                        string resourceName = name + ".hlsl.bytes";
-                        return GetEmbeddedResourceBytes(resourceName);
-                    }
+                {
+                    string resourceName = name + ".hlsl.bytes";
+                    return GetEmbeddedResourceBytes(resourceName);
+                }
                 case GraphicsBackend.OpenGL:
-                    {
-                        string resourceName = name + ".glsl";
-                        return GetEmbeddedResourceBytes(resourceName);
-                    }
+                {
+                    string resourceName = name + ".glsl";
+                    return GetEmbeddedResourceBytes(resourceName);
+                }
                 case GraphicsBackend.Vulkan:
-                    {
-                        string resourceName = name + ".spv";
-                        return GetEmbeddedResourceBytes(resourceName);
-                    }
+                {
+                    string resourceName = name + ".spv";
+                    return GetEmbeddedResourceBytes(resourceName);
+                }
                 case GraphicsBackend.Metal:
-                    {
-                        string resourceName = name + ".metallib";
-                        return GetEmbeddedResourceBytes(resourceName);
-                    }
+                {
+                    string resourceName = name + ".metallib";
+                    return GetEmbeddedResourceBytes(resourceName);
+                }
                 default:
                     throw new NotImplementedException();
             }
@@ -227,7 +304,9 @@ namespace TextEdit.Demo
             if (s == null)
             {
                 var allResources = string.Join(", ", assembly.GetManifestResourceNames());
-                throw new InvalidOperationException($"Could not find embedded resource {resourceName}, valid resources: {allResources}");
+                throw new InvalidOperationException(
+                    $"Could not find embedded resource {resourceName}, valid resources: {allResources}"
+                );
             }
 
             byte[] ret = new byte[s.Length];
@@ -245,18 +324,26 @@ namespace TextEdit.Demo
 
             ImGuiIOPtr io = ImGui.GetIO();
             // Build
-            io.Fonts.GetTexDataAsRGBA32(out IntPtr pixels, out var width, out var height, out var bytesPerPixel);
+            io.Fonts.GetTexDataAsRGBA32(
+                out IntPtr pixels,
+                out var width,
+                out var height,
+                out var bytesPerPixel
+            );
 
             // Store our identifier
             io.Fonts.SetTexID(_fontAtlasID);
 
-            _fontTexture = _gd.ResourceFactory.CreateTexture(TextureDescription.Texture2D(
-                (uint)width,
-                (uint)height,
-                1,
-                1,
-                PixelFormat.R8_G8_B8_A8_UNorm,
-                TextureUsage.Sampled));
+            _fontTexture = _gd.ResourceFactory.CreateTexture(
+                TextureDescription.Texture2D(
+                    (uint)width,
+                    (uint)height,
+                    1,
+                    1,
+                    PixelFormat.R8_G8_B8_A8_UNorm,
+                    TextureUsage.Sampled
+                )
+            );
 
             _fontTexture.Name = "ImGui.NET Font Texture";
             _gd.UpdateTexture(
@@ -270,13 +357,16 @@ namespace TextEdit.Demo
                 (uint)height,
                 1,
                 0,
-                0);
+                0
+            );
 
             _fontTextureView = _gd.ResourceFactory.CreateTextureView(_fontTexture);
 
             var factory = _gd.ResourceFactory;
             _fontTextureResourceSet?.Dispose();
-            _fontTextureResourceSet = factory.CreateResourceSet(new ResourceSetDescription(_textureLayout, _fontTextureView));
+            _fontTextureResourceSet = factory.CreateResourceSet(
+                new ResourceSetDescription(_textureLayout, _fontTextureView)
+            );
 
             io.Fonts.ClearTexData();
         }
@@ -321,13 +411,14 @@ namespace TextEdit.Demo
             ImGuiIOPtr io = ImGui.GetIO();
             io.DisplaySize = new Vector2(
                 _windowWidth / _scaleFactor.X,
-                _windowHeight / _scaleFactor.Y);
+                _windowHeight / _scaleFactor.Y
+            );
 
             io.DisplayFramebufferScale = _scaleFactor;
             io.DeltaTime = deltaSeconds; // DeltaTime is in seconds.
         }
 
-        bool TryMapKey(Key key, out ImGuiKey result)
+        static bool TryMapKey(Key key, out ImGuiKey result)
         {
             ImGuiKey KeyToImGuiKeyShortcut(Key keyToConvert, Key startKey1, ImGuiKey startKey2)
             {
@@ -338,9 +429,17 @@ namespace TextEdit.Demo
             result = key switch
             {
                 >= Key.F1 and <= Key.F24 => KeyToImGuiKeyShortcut(key, Key.F1, ImGuiKey.F1),
-                >= Key.Keypad0 and <= Key.Keypad9 => KeyToImGuiKeyShortcut(key, Key.Keypad0, ImGuiKey.Keypad0),
+                >= Key.Keypad0 and <= Key.Keypad9 => KeyToImGuiKeyShortcut(
+                    key,
+                    Key.Keypad0,
+                    ImGuiKey.Keypad0
+                ),
                 >= Key.A and <= Key.Z => KeyToImGuiKeyShortcut(key, Key.A, ImGuiKey.A),
-                >= Key.Number0 and <= Key.Number9 => KeyToImGuiKeyShortcut(key, Key.Number0, ImGuiKey._0),
+                >= Key.Number0 and <= Key.Number9 => KeyToImGuiKeyShortcut(
+                    key,
+                    Key.Number0,
+                    ImGuiKey._0
+                ),
                 Key.ShiftLeft or Key.ShiftRight => ImGuiKey.ModShift,
                 Key.ControlLeft or Key.ControlRight => ImGuiKey.ModCtrl,
                 Key.AltLeft or Key.AltRight => ImGuiKey.ModAlt,
@@ -383,7 +482,7 @@ namespace TextEdit.Demo
                 Key.Period => ImGuiKey.Period,
                 Key.Slash => ImGuiKey.Slash,
                 Key.BackSlash or Key.NonUSBackSlash => ImGuiKey.Backslash,
-                _ => ImGuiKey.None
+                _ => ImGuiKey.None,
             };
 
             return result != ImGuiKey.None;
@@ -434,14 +533,24 @@ namespace TextEdit.Demo
             if (totalVBSize > _vertexBuffer.SizeInBytes)
             {
                 gd.DisposeWhenIdle(_vertexBuffer);
-                _vertexBuffer = gd.ResourceFactory.CreateBuffer(new BufferDescription((uint)(totalVBSize * 1.5f), BufferUsage.VertexBuffer | BufferUsage.Dynamic));
+                _vertexBuffer = gd.ResourceFactory.CreateBuffer(
+                    new BufferDescription(
+                        (uint)(totalVBSize * 1.5f),
+                        BufferUsage.VertexBuffer | BufferUsage.Dynamic
+                    )
+                );
             }
 
             uint totalIBSize = (uint)(draw_data.TotalIdxCount * sizeof(ushort));
             if (totalIBSize > _indexBuffer.SizeInBytes)
             {
                 gd.DisposeWhenIdle(_indexBuffer);
-                _indexBuffer = gd.ResourceFactory.CreateBuffer(new BufferDescription((uint)(totalIBSize * 1.5f), BufferUsage.IndexBuffer | BufferUsage.Dynamic));
+                _indexBuffer = gd.ResourceFactory.CreateBuffer(
+                    new BufferDescription(
+                        (uint)(totalIBSize * 1.5f),
+                        BufferUsage.IndexBuffer | BufferUsage.Dynamic
+                    )
+                );
             }
 
             for (int i = 0; i < draw_data.CmdListsCount; i++)
@@ -452,13 +561,15 @@ namespace TextEdit.Demo
                     _vertexBuffer,
                     vertexOffsetInVertices * (uint)Unsafe.SizeOf<ImDrawVert>(),
                     cmd_list.VtxBuffer.Data,
-                    (uint)(cmd_list.VtxBuffer.Size * Unsafe.SizeOf<ImDrawVert>()));
+                    (uint)(cmd_list.VtxBuffer.Size * Unsafe.SizeOf<ImDrawVert>())
+                );
 
                 cl.UpdateBuffer(
                     _indexBuffer,
                     indexOffsetInElements * sizeof(ushort),
                     cmd_list.IdxBuffer.Data,
-                    (uint)(cmd_list.IdxBuffer.Size * sizeof(ushort)));
+                    (uint)(cmd_list.IdxBuffer.Size * sizeof(ushort))
+                );
 
                 vertexOffsetInVertices += (uint)cmd_list.VtxBuffer.Size;
                 indexOffsetInElements += (uint)cmd_list.IdxBuffer.Size;
@@ -472,7 +583,8 @@ namespace TextEdit.Demo
                 io.DisplaySize.Y,
                 0.0f,
                 -1.0f,
-                1.0f);
+                1.0f
+            );
 
             _gd.UpdateBuffer(_projMatrixBuffer, 0, ref mvp);
 
@@ -515,9 +627,16 @@ namespace TextEdit.Demo
                             (uint)pcmd.ClipRect.X,
                             (uint)pcmd.ClipRect.Y,
                             (uint)(pcmd.ClipRect.Z - pcmd.ClipRect.X),
-                            (uint)(pcmd.ClipRect.W - pcmd.ClipRect.Y));
+                            (uint)(pcmd.ClipRect.W - pcmd.ClipRect.Y)
+                        );
 
-                        cl.DrawIndexed(pcmd.ElemCount, 1, pcmd.IdxOffset + (uint)idx_offset, (int)pcmd.VtxOffset + vtx_offset, 0);
+                        cl.DrawIndexed(
+                            pcmd.ElemCount,
+                            1,
+                            pcmd.IdxOffset + (uint)idx_offset,
+                            (int)pcmd.VtxOffset + vtx_offset,
+                            0
+                        );
                     }
                 }
                 vtx_offset += cmd_list.VtxBuffer.Size;

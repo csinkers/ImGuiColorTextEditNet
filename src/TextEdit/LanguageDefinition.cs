@@ -43,6 +43,7 @@ public class LanguageDefinition
     /// <summary>Creates a predefined language definition for HLSL (High-Level Shading Language).</summary>
     public static LanguageDefinition Hlsl()
     {
+        // csharpier-ignore-start
         LanguageDefinition langDef = new("HLSL")
         {
             Keywords =
@@ -96,11 +97,13 @@ public class LanguageDefinition
         langDef.TokenRegexStrings.Add(("[a-zA-Z_][a-zA-Z0-9_]*", PaletteIndex.Identifier));
         langDef.TokenRegexStrings.Add((@"[\[\]\{\}\!\%\^\&\*\(\)\-\+\=\~\|\<\>\?\/\;\,\.]", PaletteIndex.Punctuation));
         return langDef;
+        // csharpier-ignore-end
     }
 
     /// <summary>Creates a predefined language definition for GLSL (OpenGL Shading Language).</summary>
     public static LanguageDefinition Glsl()
     {
+        // csharpier-ignore-start
         LanguageDefinition langDef = new("GLSL")
         {
             Keywords =
@@ -127,11 +130,13 @@ public class LanguageDefinition
         langDef.TokenRegexStrings.Add((@"[\[\]\{\}\!\%\^\&\*\(\)\-\+\=\~\|\<\>\?\/\;\,\.]", PaletteIndex.Punctuation));
 
         return langDef;
+        // csharpier-ignore-end
     }
 
     /// <summary>Creates a predefined language definition for SQL (Structured Query Language).</summary>
     public static LanguageDefinition Sql()
     {
+        // csharpier-ignore-start
         LanguageDefinition langDef = new("SQL")
         {
             CaseSensitive = false,
@@ -174,11 +179,13 @@ public class LanguageDefinition
         langDef.TokenRegexStrings.Add((@"[\[\]\{\}\!\%\^\&\*\(\)\-\+\=\~\|\<\>\?\/\;\,\.]", PaletteIndex.Punctuation));
 
         return langDef;
+        // csharpier-ignore-end
     }
 
     /// <summary>Creates a predefined language definition for Lua</summary>
     public static LanguageDefinition Lua()
     {
+        // csharpier-ignore-start
         LanguageDefinition langDef = new("Lua")
         {
             CommentStart = "--[[",
@@ -214,5 +221,6 @@ public class LanguageDefinition
         langDef.TokenRegexStrings.Add((@"[\[\]\{\}\!\%\^\&\*\(\)\-\+\=\~\|\<\>\?\/\;\,\.]", PaletteIndex.Punctuation));
 
         return langDef;
+        // csharpier-ignore-end
     }
 }

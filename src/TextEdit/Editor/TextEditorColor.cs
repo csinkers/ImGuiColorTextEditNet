@@ -31,8 +31,14 @@ internal class TextEditorColor
 
     internal void ColorizeIncremental()
     {
-        if (_text.LineCount == 0 || !_options.IsColorizerEnabled || _colorRangeMin >= _colorRangeMax)
+        if (
+            _text.LineCount == 0
+            || !_options.IsColorizerEnabled
+            || _colorRangeMin >= _colorRangeMax
+        )
+        {
             return;
+        }
 
         int increment = SyntaxHighlighter.MaxLinesPerFrame;
         int to = Math.Min(_colorRangeMin + increment, _colorRangeMax);
@@ -62,7 +68,11 @@ internal class TextEditorColor
         fromLine = Math.Min(_colorRangeMin, fromLine);
         fromLine = Math.Max(0, fromLine);
 
-        int toLine = lineCount == -1 ? _text.LineCount : Math.Min(_text.LineCount, fromLine + lineCount);
+        int toLine = _text.LineCount;
+
+        if (lineCount != -1)
+            toLine = Math.Min(_text.LineCount, fromLine + lineCount);
+
         toLine = Math.Max(_colorRangeMax, toLine);
         toLine = Math.Max(fromLine, toLine);
 

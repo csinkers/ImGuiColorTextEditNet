@@ -14,7 +14,13 @@ public class TextEditorModify
     readonly TextEditorOptions _options;
     readonly TextEditorColor _color;
 
-    internal TextEditorModify(TextEditorSelection selection, TextEditorText text, TextEditorUndoStack undo, TextEditorOptions options, TextEditorColor color)
+    internal TextEditorModify(
+        TextEditorSelection selection,
+        TextEditorText text,
+        TextEditorUndoStack undo,
+        TextEditorOptions options,
+        TextEditorColor color
+    )
     {
         _selection = selection ?? throw new ArgumentNullException(nameof(selection));
         _text = text ?? throw new ArgumentNullException(nameof(text));
@@ -69,7 +75,7 @@ public class TextEditorModify
 
         unsafe
         {
-            if(ImGuiNative.igGetClipboardText() == null)
+            if (ImGuiNative.igGetClipboardText() == null)
                 return;
         }
 
@@ -77,8 +83,8 @@ public class TextEditorModify
         if (string.IsNullOrEmpty(clipText))
             return;
 
-        UndoRecord u = _selection.HasSelection 
-            ? DeleteSelection() 
+        UndoRecord u = _selection.HasSelection
+            ? DeleteSelection()
             : new() { Before = _selection.State };
 
         u.Added = clipText;
@@ -143,10 +149,7 @@ public class TextEditorModify
     public void EnterCharacter(char c)
     {
         Util.Assert(!_options.IsReadOnly);
-        var u =
-            _selection.HasSelection
-            ? DeleteSelection()
-            : new() { Before = _selection.State };
+        var u = _selection.HasSelection ? DeleteSelection() : new() { Before = _selection.State };
 
         var coord = _selection.GetActualCursorCoordinates();
         u.AddedStart = coord;
@@ -159,8 +162,18 @@ public class TextEditorModify
             var newLine = new Line();
 
             if (_color.SyntaxHighlighter.AutoIndentation)
-                for (int it = 0; it < line.Length && char.IsAscii(line[it].Char) && TextEditorText.IsBlank(line[it].Char); ++it)
+            {
+                for (
+                    int it = 0;
+                    it < line.Length
+                        && char.IsAscii(line[it].Char)
+                        && TextEditorText.IsBlank(line[it].Char);
+                    ++it
+                )
+                {
                     newLine.Glyphs.Add(line[it]);
+                }
+            }
 
             int whitespaceSize = newLine.Glyphs.Count;
             var cindex = _text.GetCharacterIndex(coord);
@@ -169,7 +182,11 @@ public class TextEditorModify
 
             _text.InsertLine(coord.Line + 1, newLine);
             _text.RemoveInLine(coord.Line, cindex, line.Length);
-            _selection.Cursor = (coord.Line + 1, _text.GetCharacterColumn(coord.Line + 1, whitespaceSize));
+            _selection.Cursor = (
+                coord.Line + 1,
+                _text.GetCharacterColumn(coord.Line + 1, whitespaceSize)
+            );
+
             u.Added = "\n";
         }
         else
@@ -249,7 +266,11 @@ public class TextEditorModify
                 }
                 else
                 {
-                    for (int j = 0; j < _text.TabSize && line.Length != 0 && line[0].Char == ' '; j++)
+                    for (
+                        int j = 0;
+                        j < _text.TabSize && line.Length != 0 && line[0].Char == ' ';
+                        j++
+                    )
                     {
                         _text.RemoveInLine(i, 0, 1);
                         modified = true;
@@ -370,7 +391,7 @@ public class TextEditorModify
             Before = _selection.State,
             Removed = _selection.GetSelectedText(),
             RemovedStart = _selection.Start,
-            RemovedEnd = _selection.End
+            RemovedEnd = _selection.End,
         };
 
         if (_selection.End != _selection.Start)

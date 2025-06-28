@@ -20,7 +20,11 @@ public struct Coordinates : IEquatable<Coordinates>
     public int Column;
 
     /// <summary>Creates a new instance of Coordinates at (0,0)</summary>
-    public Coordinates() { Line = 0; Column = 0; }
+    public Coordinates()
+    {
+        Line = 0;
+        Column = 0;
+    }
 
     /// <summary>Creates a new instance of Coordinates at the specified line and column.</summary>
     public Coordinates(int line, int column)
@@ -43,22 +47,28 @@ public struct Coordinates : IEquatable<Coordinates>
     public static Coordinates Invalid => new() { Line = -1, Column = -1 };
 
     /// <summary>Compares two Coordinates for equality.</summary>
-    public static bool operator ==(Coordinates x, Coordinates y) => x.Line == y.Line && x.Column == y.Column;
+    public static bool operator ==(Coordinates x, Coordinates y) =>
+        x.Line == y.Line && x.Column == y.Column;
 
     /// <summary>Compares two Coordinates for inequality.</summary>
-    public static bool operator !=(Coordinates x, Coordinates y) => x.Line != y.Line || x.Column != y.Column;
+    public static bool operator !=(Coordinates x, Coordinates y) =>
+        x.Line != y.Line || x.Column != y.Column;
 
     /// <summary>Compares two Coordinates to determine if one is less than the other.</summary>
-    public static bool operator <(Coordinates x, Coordinates y) => x.Line != y.Line ? x.Line < y.Line : x.Column < y.Column;
+    public static bool operator <(Coordinates x, Coordinates y) =>
+        x.Line != y.Line ? x.Line < y.Line : x.Column < y.Column;
 
     /// <summary>Compares two Coordinates to determine if one is greater than the other.</summary>
-    public static bool operator >(Coordinates x, Coordinates y) => x.Line != y.Line ? x.Line > y.Line : x.Column > y.Column;
+    public static bool operator >(Coordinates x, Coordinates y) =>
+        x.Line != y.Line ? x.Line > y.Line : x.Column > y.Column;
 
     /// <summary>Compares two Coordinates to determine if one is less than or equal to the other.</summary>
-    public static bool operator <=(Coordinates x, Coordinates y) => x.Line != y.Line ? x.Line < y.Line : x.Column <= y.Column;
+    public static bool operator <=(Coordinates x, Coordinates y) =>
+        x.Line != y.Line ? x.Line < y.Line : x.Column <= y.Column;
 
     /// <summary>Compares two Coordinates to determine if one is greater than or equal to the other.</summary>
-    public static bool operator >=(Coordinates x, Coordinates y) => x.Line != y.Line ? x.Line > y.Line : x.Column >= y.Column;
+    public static bool operator >=(Coordinates x, Coordinates y) =>
+        x.Line != y.Line ? x.Line > y.Line : x.Column >= y.Column;
 
     /// <summary>Checks if the current Coordinates instance is equal to another Coordinates instance.</summary>
     public bool Equals(Coordinates other) => Line == other.Line && Column == other.Column;
