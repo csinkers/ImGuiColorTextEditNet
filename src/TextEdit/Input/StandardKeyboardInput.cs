@@ -25,12 +25,15 @@ public class StandardKeyboardInput : ITextEditorKeyboardInput
         AddReadOnlyBinding("Tab", e => Indent(false, e));
         AddReadOnlyBinding("Shift + Tab", e => Indent(true, e));
 
-        AddReadOnlyBinding(
+        AddBinding(
             "CapsLock",
-            e =>
+            (e, _) =>
             {
-                if (ColemakMode)
-                    e.Modify.Backspace();
+                if (!ColemakMode)
+                    return false;
+
+                e.Modify.Backspace();
+                return true;
             }
         );
 
@@ -57,8 +60,13 @@ public class StandardKeyboardInput : ITextEditorKeyboardInput
             "Shift + PageDown",
             e => e.Movement.MoveDown(e.Renderer.PageSize - 4, true)
         );
+
+        // BUG: Ctrl+Shift+End doesn't select content on the final line.
+
         AddMutatingBinding("Home", e => e.Movement.MoveToStartOfLine());
         AddMutatingBinding("End", e => e.Movement.MoveToEndOfLine());
+        AddMutatingBinding("Shift+Home", e => e.Movement.MoveToStartOfLine(true));
+        AddMutatingBinding("Shift+End", e => e.Movement.MoveToEndOfLine(true));
         AddMutatingBinding("Ctrl + Home", e => e.Movement.MoveToStartOfFile());
         AddMutatingBinding("Ctrl + Shift + Home", e => e.Movement.MoveToStartOfFile(true));
         AddMutatingBinding("Ctrl + End", e => e.Movement.MoveToEndOfFile());

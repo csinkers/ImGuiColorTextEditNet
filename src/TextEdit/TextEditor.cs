@@ -51,7 +51,7 @@ public class TextEditor
         ErrorMarkers = new(Text);
         Color = new(Options, Text);
         Movement = new(Selection, Text);
-        UndoStack = new(Text, Color, Options, Selection);
+        UndoStack = new(Text, Options);
         Modify = new(Selection, Text, UndoStack, Options, Color);
         Renderer = new(this, Palettes.Dark)
         {
@@ -144,10 +144,10 @@ public class TextEditor
     public void Render(string title, Vector2 size = new()) => Renderer.Render(title, size);
 
     /// <summary>Undoes the last action in the text editor, allowing for reverting changes made to the text.</summary>
-    public void Undo() => UndoStack.Undo();
+    public void Undo() => UndoStack.Undo(this);
 
     /// <summary>Redoes the last undone action in the text editor, allowing for reapplying changes that were previously undone.</summary>
-    public void Redo() => UndoStack.Redo();
+    public void Redo() => UndoStack.Redo(this);
 
     /// <summary>Gets the number of actions that can be undone in the text editor.</summary>
     public int UndoCount => UndoStack.UndoCount;

@@ -19,4 +19,6 @@ public class TextEditorOptions
     /// Whether the editor should colorize text using a syntax highlighter.
     /// </summary>
     public bool IsColorizerEnabled { get; set; } = true;
+
+    // TODO: Tab/space indent settings
 }
