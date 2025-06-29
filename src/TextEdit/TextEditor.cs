@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Numerics;
 using System.Text.Json;
 using ImGuiColorTextEditNet.Editor;
+using ImGuiColorTextEditNet.Input;
+using ImGuiColorTextEditNet.Syntax;
 
 // ReSharper disable MemberCanBePrivate.Global
 // ReSharper disable UnusedMember.Global

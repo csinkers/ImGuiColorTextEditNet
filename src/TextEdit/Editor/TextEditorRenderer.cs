@@ -3,6 +3,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Text;
+using ImGuiColorTextEditNet.Input;
 using ImGuiNET;
 
 namespace ImGuiColorTextEditNet.Editor;

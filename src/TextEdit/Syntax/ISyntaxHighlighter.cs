@@ -1,6 +1,6 @@
 using System;
 
-namespace ImGuiColorTextEditNet;
+namespace ImGuiColorTextEditNet.Syntax;
 
 /// <summary>
 /// Defines the interface for syntax highlighters.

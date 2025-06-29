@@ -1,6 +1,6 @@
 using System;
 
-namespace ImGuiColorTextEditNet;
+namespace ImGuiColorTextEditNet.Syntax;
 
 /// <summary>
 /// A syntax highlighter for C and C++ style languages.

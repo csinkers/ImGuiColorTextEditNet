@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using ImGuiNET;
 
-namespace ImGuiColorTextEditNet;
+namespace ImGuiColorTextEditNet.Input;
 
 /// <summary>Represents the standard keyboard input handling.</summary>
 public class StandardKeyboardInput : ITextEditorKeyboardInput

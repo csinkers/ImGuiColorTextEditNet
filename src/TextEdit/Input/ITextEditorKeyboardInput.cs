@@ -1,4 +1,4 @@
-namespace ImGuiColorTextEditNet;
+namespace ImGuiColorTextEditNet.Input;
 
 /// <summary>
 /// Defines the interface for handling keyboard inputs.

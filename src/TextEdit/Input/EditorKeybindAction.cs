@@ -1,4 +1,4 @@
-namespace ImGuiColorTextEditNet;
+namespace ImGuiColorTextEditNet.Input;
 
 /// <summary>
 /// Delegate type for actions that are invoked due to a key binding.

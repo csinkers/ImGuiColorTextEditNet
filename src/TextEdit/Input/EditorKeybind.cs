@@ -1,7 +1,7 @@
 using System;
 using ImGuiNET;
 
-namespace ImGuiColorTextEditNet;
+namespace ImGuiColorTextEditNet.Input;
 
 /// <summary>
 /// Details of an editor key-bind
