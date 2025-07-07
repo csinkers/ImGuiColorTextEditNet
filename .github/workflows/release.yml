@@ -21,12 +21,12 @@ jobs:
     - name: Build with dotnet
       env:
         MINVER_VERSION: ${{ vars.MINVER_VERSION }}
-      run: dotnet build --configuration Release ../../src/TextEdit/ImGuiColorTextEditNet.csproj
+      run: dotnet build --configuration Release src/TextEdit/ImGuiColorTextEditNet.csproj
 
     - name: Push to NuGet
       env:
         SOURCE: ${{ secrets.NUGET_SOURCE }} # https://api.nuget.org/v3/index.json
         API_KEY: ${{ secrets.NUGET_API_KEY }}
       if: env.SOURCE != '' || env.API_KEY != ''
-      run: dotnet nuget push ./**/*.nupkg --source ${{ env.SOURCE }} --api-key ${{ env.API_KEY }}
+      run: dotnet nuget push ./build/ImGuiColorTextEditNet/bin/Release/*.nupkg --source ${{ env.SOURCE }} --api-key ${{ env.API_KEY }}
 
