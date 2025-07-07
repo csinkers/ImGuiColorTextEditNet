@@ -74,4 +74,10 @@ internal class TextEditorUndoStack
 
         return JsonSerializer.Serialize(state, new JsonSerializerOptions { WriteIndented = true });
     }
+
+    public void Do(IEditorOperation operation, TextEditor e)
+    {
+        operation.Apply(e);
+        AddUndo(operation);
+    }
 }

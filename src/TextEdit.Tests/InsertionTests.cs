@@ -1,5 +1,6 @@
 using System;
 using ImGuiColorTextEditNet;
+using ImGuiColorTextEditNet.Editor;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace TextEdit.Tests;
@@ -25,20 +26,20 @@ public class InsertionTests
             t.ErrorMarkers.Add(0, 1);
         Assert.AreEqual("", t.AllText);
 
-        UndoHelper.TestUndo(t, x => x.Modify.EnterCharacter('a'));
+        UndoHelper.TestUndo(t, x => TextEditorModify.EnterCharacter(x, 'a'));
         Assert.AreEqual("a", t.AllText);
         Assert.AreEqual((0, 1), t.CursorPosition);
         Assert.AreEqual(1, t.UndoCount);
         Assert.AreEqual(1, t.UndoIndex);
 
-        UndoHelper.TestUndo(t, x => x.Modify.EnterCharacter('b'));
+        UndoHelper.TestUndo(t, x => TextEditorModify.EnterCharacter(x, 'b'));
         Assert.AreEqual("ab", t.AllText);
         Assert.AreEqual((0, 2), t.CursorPosition);
         Assert.AreEqual(2, t.UndoCount);
         Assert.AreEqual(2, t.UndoIndex);
 
         t.Selection.Select((0, 0), (0, 2));
-        UndoHelper.TestUndo(t, x => x.Modify.EnterCharacter('c'));
+        UndoHelper.TestUndo(t, x => TextEditorModify.EnterCharacter(x, 'c'));
         Assert.AreEqual("c", t.AllText);
         Assert.AreEqual((0, 1), t.CursorPosition);
         Assert.AreEqual(3, t.UndoCount);
@@ -65,20 +66,20 @@ public class InsertionTests
 
         Assert.AreEqual("", t.AllText);
 
-        UndoHelper.TestUndo(t, x => x.Modify.EnterCharacter('\n'));
+        UndoHelper.TestUndo(t, x => TextEditorModify.EnterCharacter(x, '\n'));
         Assert.AreEqual(Environment.NewLine, t.AllText);
         Assert.AreEqual((1, 0), t.CursorPosition);
         Assert.AreEqual(1, t.UndoCount);
         Assert.AreEqual(1, t.UndoIndex);
 
-        UndoHelper.TestUndo(t, x => x.Modify.EnterCharacter('a'));
+        UndoHelper.TestUndo(t, x => TextEditorModify.EnterCharacter(x, 'a'));
         Assert.AreEqual(Environment.NewLine + "a", t.AllText);
         Assert.AreEqual((1, 1), t.CursorPosition);
         Assert.AreEqual(2, t.UndoCount);
         Assert.AreEqual(2, t.UndoIndex);
 
         t.Selection.SelectAll();
-        UndoHelper.TestUndo(t, x => x.Modify.EnterCharacter('\n'));
+        UndoHelper.TestUndo(t, x => TextEditorModify.EnterCharacter(x, '\n'));
         Assert.AreEqual(Environment.NewLine, t.AllText);
         Assert.AreEqual((1, 0), t.CursorPosition);
         Assert.AreEqual(3, t.UndoCount);
@@ -121,13 +122,13 @@ for (a = 0; a < 10; a++) // 3
             t.ErrorMarkers.Add(3, 1);
 
         t.Selection.Select((2, 0), (4, 1));
-        UndoHelper.TestUndo(t, x => x.Modify.IndentSelection(false));
+        UndoHelper.TestUndo(t, x => TextEditorModify.IndentSelection(x, false));
         Assert.AreEqual(after, t.AllText);
         Assert.AreEqual(1, t.UndoCount);
         Assert.AreEqual(1, t.UndoIndex);
 
         t.Selection.Select((2, 0), (4, 1));
-        UndoHelper.TestUndo(t, x => x.Modify.IndentSelection(true));
+        UndoHelper.TestUndo(t, x => TextEditorModify.IndentSelection(x, true));
         Assert.AreEqual(before, t.AllText);
         Assert.AreEqual(2, t.UndoCount);
         Assert.AreEqual(2, t.UndoIndex);

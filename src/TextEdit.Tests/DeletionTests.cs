@@ -1,4 +1,5 @@
 using ImGuiColorTextEditNet;
+using ImGuiColorTextEditNet.Editor;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace TextEdit.Tests;
@@ -24,19 +25,19 @@ public class DeletionTests
             t.ErrorMarkers.Add(0, 1);
         Assert.AreEqual((0, 0), t.CursorPosition);
 
-        UndoHelper.TestNopUndo(t, x => x.Modify.Backspace()); // Backspace at start of a line should do nothing
+        UndoHelper.TestNopUndo(t, TextEditorModify.Backspace); // Backspace at start of a line should do nothing
         Assert.AreEqual("abc", t.AllText);
         Assert.AreEqual(0, t.UndoCount);
         Assert.AreEqual(0, t.UndoIndex);
 
         t.Selection.Select((0, 0), (0, 1));
-        UndoHelper.TestUndo(t, x => x.Modify.Backspace());
+        UndoHelper.TestUndo(t, TextEditorModify.Backspace);
         Assert.AreEqual("bc", t.AllText);
         Assert.AreEqual(1, t.UndoCount);
         Assert.AreEqual(1, t.UndoIndex);
 
         t.CursorPosition = (0, 1);
-        UndoHelper.TestUndo(t, x => x.Modify.Backspace());
+        UndoHelper.TestUndo(t, TextEditorModify.Backspace);
         Assert.AreEqual("c", t.AllText);
         Assert.AreEqual(2, t.UndoCount);
         Assert.AreEqual(2, t.UndoIndex);
@@ -64,7 +65,7 @@ three";
         t.CursorPosition = (2, 1);
         t.Selection.Select((0, 2), (2, 1));
 
-        UndoHelper.TestUndo(t, x => x.Modify.Backspace());
+        UndoHelper.TestUndo(t, TextEditorModify.Backspace);
         Assert.AreEqual(after, t.AllText);
         Assert.AreEqual((0, 2), t.CursorPosition);
         Assert.AreEqual((0, 2), t.Selection.Start);
@@ -94,7 +95,7 @@ three";
         t.CursorPosition = (0, 2);
         t.Selection.Select((0, 2), (2, 1));
 
-        UndoHelper.TestUndo(t, x => x.Modify.Backspace());
+        UndoHelper.TestUndo(t, TextEditorModify.Backspace);
         Assert.AreEqual(after, t.AllText);
         Assert.AreEqual((0, 2), t.CursorPosition);
         Assert.AreEqual((0, 2), t.Selection.Start);
@@ -116,14 +117,14 @@ three";
 
         Assert.AreEqual((0, 0), t.CursorPosition);
 
-        UndoHelper.TestUndo(t, x => x.Modify.Delete());
+        UndoHelper.TestUndo(t, TextEditorModify.Delete);
         Assert.AreEqual("bc", t.AllText);
         Assert.AreEqual((0, 0), t.CursorPosition);
         Assert.AreEqual(1, t.UndoCount);
         Assert.AreEqual(1, t.UndoIndex);
 
         t.CursorPosition = (0, 2);
-        UndoHelper.TestNopUndo(t, x => x.Modify.Delete());
+        UndoHelper.TestNopUndo(t, TextEditorModify.Delete);
         Assert.AreEqual("bc", t.AllText);
         Assert.AreEqual((0, 2), t.CursorPosition);
         Assert.AreEqual(1, t.UndoCount);
@@ -134,7 +135,7 @@ three";
         Assert.AreEqual((0, 0), t.Selection.Start);
         Assert.AreEqual((0, 2), t.Selection.End);
 
-        UndoHelper.TestUndo(t, x => x.Modify.Delete());
+        UndoHelper.TestUndo(t, TextEditorModify.Delete);
         Assert.AreEqual("", t.AllText);
         Assert.AreEqual((0, 0), t.CursorPosition);
         Assert.AreEqual((0, 0), t.Selection.Start);

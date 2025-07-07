@@ -35,9 +35,6 @@ public class TextEditor
     /// <summary>Gets the renderer, responsible for rendering the text and its syntax highlighting.</summary>
     public TextEditorRenderer Renderer { get; }
 
-    /// <summary>Gets the modification manager, allowing for text modifications such as insertions and deletions.</summary>
-    public TextEditorModify Modify { get; }
-
     /// <summary>Gets the movement manager, allowing for cursor movement and navigation within the text.</summary>
     public TextEditorMovement Movement { get; }
 
@@ -52,7 +49,6 @@ public class TextEditor
         Color = new(Options, Text);
         Movement = new(Selection, Text);
         UndoStack = new(Text, Options);
-        Modify = new(Selection, Text, UndoStack, Options, Color);
         Renderer = new(this, Palettes.Dark)
         {
             KeyboardInput = new StandardKeyboardInput(this),
@@ -110,13 +106,6 @@ public class TextEditor
 
     /// <summary>Sets the color for a specific palette index in the text editor.</summary>
     public void SetColor(PaletteIndex color, uint abgr) => Renderer.SetColor(color, abgr);
-
-    /// <summary>Gets or sets the tab size, which determines the number of spaces used for a tab character.</summary>
-    public int TabSize
-    {
-        get => Text.TabSize;
-        set => Text.TabSize = value;
-    }
 
     /// <summary>Gets the text of the current line where the cursor is located.</summary>
     public string GetCurrentLineText()

@@ -1,77 +1,60 @@
 using System;
 using System.Text;
+using ImGuiColorTextEditNet.Operations;
 using ImGuiNET;
 
 namespace ImGuiColorTextEditNet.Editor;
 
 /// <summary>Provides methods for modifying text, e.g. copy, cut, paste, delete, and character entry.</summary>
-public class TextEditorModify
+public static class TextEditorModify
 {
-    readonly SimpleCache<char, string> _charLabelCache = new("char strings", x => x.ToString());
-    readonly TextEditorSelection _selection;
-    readonly TextEditorText _text;
-    readonly TextEditorUndoStack _undo;
-    readonly TextEditorOptions _options;
-    readonly TextEditorColor _color;
-
-    internal TextEditorModify(
-        TextEditorSelection selection,
-        TextEditorText text,
-        TextEditorUndoStack undo,
-        TextEditorOptions options,
-        TextEditorColor color
-    )
-    {
-        _selection = selection ?? throw new ArgumentNullException(nameof(selection));
-        _text = text ?? throw new ArgumentNullException(nameof(text));
-        _undo = undo ?? throw new ArgumentNullException(nameof(undo));
-        _options = options ?? throw new ArgumentNullException(nameof(options));
-        _color = color ?? throw new ArgumentNullException(nameof(color));
-    }
+    static readonly SimpleCache<char, string> CharLabelCache = new(
+        "char strings",
+        x => x.ToString()
+    );
 
     /// <summary>Copies the currently selected text to the clipboard.</summary>
-    public void Copy()
+    public static void Copy(TextEditor e)
     {
-        if (_selection.HasSelection)
+        if (e.Selection.HasSelection)
         {
-            ImGui.SetClipboardText(_selection.GetSelectedText());
+            ImGui.SetClipboardText(e.Selection.GetSelectedText());
+            return;
         }
-        else
-        {
-            if (_text.LineCount != 0)
-            {
-                StringBuilder sb = new();
 
-                var line = _text.GetLine(_selection.GetActualCursorCoordinates().Line);
-                foreach (var g in line)
-                    sb.Append(g.Char);
+        if (e.Text.LineCount == 0)
+            return;
 
-                ImGui.SetClipboardText(sb.ToString());
-            }
-        }
+        StringBuilder sb = new();
+
+        var line = e.Text.GetLine(e.Selection.GetActualCursorCoordinates().Line);
+        foreach (var g in line)
+            sb.Append(g.Char);
+
+        ImGui.SetClipboardText(sb.ToString());
     }
 
     /// <summary>Cuts the currently selected text, copying it to the clipboard and removing it from the editor.</summary>
-    public void Cut()
+    public static void Cut(TextEditor e)
     {
-        if (_options.IsReadOnly)
+        if (e.Options.IsReadOnly)
         {
-            Copy();
+            Copy(e);
             return;
         }
 
-        if (!_selection.HasSelection)
+        if (!e.Selection.HasSelection)
             return;
 
-        Copy();
-        var undo = DeleteSelection();
-        _undo.AddUndo(undo);
+        Copy(e);
+        UndoRecord undo = DeleteSelection(e);
+        e.UndoStack.AddUndo(undo);
     }
 
     /// <summary>Pastes text from the clipboard into the editor at the current cursor position or replaces the selection if any exists.</summary>
-    public void Paste()
+    public static void Paste(TextEditor e)
     {
-        Util.Assert(!_options.IsReadOnly);
+        Util.Assert(!e.Options.IsReadOnly);
 
         unsafe
         {
@@ -83,85 +66,87 @@ public class TextEditorModify
         if (string.IsNullOrEmpty(clipText))
             return;
 
-        UndoRecord u = _selection.HasSelection
-            ? DeleteSelection()
-            : new() { Before = _selection.State };
+        UndoRecord u = e.Selection.HasSelection
+            ? DeleteSelection(e)
+            : new() { Before = e.Selection.State };
 
         u.Added = clipText;
-        u.AddedStart = _selection.GetActualCursorCoordinates();
+        u.AddedStart = e.Selection.GetActualCursorCoordinates();
 
-        InsertTextAtCursor(clipText);
+        InsertTextAtCursor(e, clipText);
 
-        u.AddedEnd = _selection.GetActualCursorCoordinates();
-        u.After = _selection.State;
-        _undo.AddUndo(u);
+        u.AddedEnd = e.Selection.GetActualCursorCoordinates();
+        u.After = e.Selection.State;
+        e.UndoStack.AddUndo(u);
     }
 
     /// <summary>Deletes the currently selected text or the character at the cursor position if no selection exists.</summary>
-    public void Delete()
+    public static void Delete(TextEditor e)
     {
-        if (_options.IsReadOnly)
+        if (e.Options.IsReadOnly)
             return;
 
-        if (_text.LineCount == 0)
+        if (e.Text.LineCount == 0)
             return;
 
-        if (_selection.HasSelection)
+        if (e.Selection.HasSelection)
         {
-            var u = DeleteSelection();
-            _undo.AddUndo(u);
+            UndoRecord u = DeleteSelection(e);
+            e.UndoStack.AddUndo(u);
         }
         else
         {
-            var pos = _selection.GetActualCursorCoordinates();
-            _selection.Cursor = pos;
+            var pos = e.Selection.GetActualCursorCoordinates();
+            e.Selection.Cursor = pos;
 
-            var u = new UndoRecord { Before = _selection.State };
+            UndoRecord u = new() { Before = e.Selection.State };
 
-            if (pos.Column == _text.GetLineMaxColumn(pos.Line))
+            if (pos.Column == e.Text.GetLineMaxColumn(pos.Line))
             {
-                if (pos.Line == _text.LineCount - 1)
+                if (pos.Line == e.Text.LineCount - 1)
                     return;
 
                 u.Removed = "\n";
-                u.RemovedStart = u.RemovedEnd = _selection.GetActualCursorCoordinates();
-                _text.Advance(u.RemovedEnd);
-                _text.AppendToLine(pos.Line, _text.GetLineText(pos.Line + 1));
-                _text.RemoveLine(pos.Line + 1);
+                u.RemovedStart = u.RemovedEnd = e.Selection.GetActualCursorCoordinates();
+                e.Text.Advance(u.RemovedEnd);
+                e.Text.AppendToLine(pos.Line, e.Text.GetLineText(pos.Line + 1));
+                e.Text.RemoveLine(pos.Line + 1);
             }
             else
             {
-                var cindex = _text.GetCharacterIndex(pos);
-                u.RemovedStart = u.RemovedEnd = _selection.GetActualCursorCoordinates();
+                var cindex = e.Text.GetCharacterIndex(pos);
+                u.RemovedStart = u.RemovedEnd = e.Selection.GetActualCursorCoordinates();
                 u.RemovedEnd.Column++;
-                u.Removed = _text.GetText(u.RemovedStart, u.RemovedEnd);
+                u.Removed = e.Text.GetText(u.RemovedStart, u.RemovedEnd);
 
-                _text.RemoveInLine(pos.Line, cindex, cindex + 1);
+                e.Text.RemoveInLine(pos.Line, cindex, cindex + 1);
             }
 
-            u.After = _selection.State;
-            _color.InvalidateColor(pos.Line, 1);
-            _undo.AddUndo(u);
+            u.After = e.Selection.State;
+            e.Color.InvalidateColor(pos.Line, 1);
+            e.UndoStack.AddUndo(u);
         }
     }
 
     /// <summary>Inserts a character at the current cursor position or replaces the selection if any exists.</summary>
-    public void EnterCharacter(char c)
+    public static void EnterCharacter(TextEditor e, char c)
     {
-        Util.Assert(!_options.IsReadOnly);
-        var u = _selection.HasSelection ? DeleteSelection() : new() { Before = _selection.State };
+        Util.Assert(!e.Options.IsReadOnly);
+        UndoRecord u = e.Selection.HasSelection
+            ? DeleteSelection(e)
+            : new() { Before = e.Selection.State };
 
-        var coord = _selection.GetActualCursorCoordinates();
+        var coord = e.Selection.GetActualCursorCoordinates();
         u.AddedStart = coord;
 
-        Util.Assert(_text.LineCount != 0);
+        Util.Assert(e.Text.LineCount != 0);
 
         if (c == '\n')
         {
-            var line = _text.GetLine(coord.Line);
+            var line = e.Text.GetLine(coord.Line);
             var newLine = new Line();
 
-            if (_color.SyntaxHighlighter.AutoIndentation)
+            if (e.Color.SyntaxHighlighter.AutoIndentation)
             {
                 for (
                     int it = 0;
@@ -176,234 +161,241 @@ public class TextEditorModify
             }
 
             int whitespaceSize = newLine.Glyphs.Count;
-            var cindex = _text.GetCharacterIndex(coord);
+            var cindex = e.Text.GetCharacterIndex(coord);
             foreach (var glyph in line[cindex..])
                 newLine.Glyphs.Add(glyph);
 
-            _text.InsertLine(coord.Line + 1, newLine);
-            _text.RemoveInLine(coord.Line, cindex, line.Length);
-            _selection.Cursor = (
+            e.Text.InsertLine(coord.Line + 1, newLine);
+            e.Text.RemoveInLine(coord.Line, cindex, line.Length);
+            e.Selection.Cursor = (
                 coord.Line + 1,
-                _text.GetCharacterColumn(coord.Line + 1, whitespaceSize)
+                e.Text.GetCharacterColumn(coord.Line + 1, whitespaceSize)
             );
 
             u.Added = "\n";
         }
         else
         {
-            var line = _text.GetLine(coord.Line);
-            var cindex = _text.GetCharacterIndex(coord);
+            var line = e.Text.GetLine(coord.Line);
+            var cindex = e.Text.GetCharacterIndex(coord);
 
-            if (_options.IsOverwrite && cindex < line.Length)
+            if (e.Options.IsOverwrite && cindex < line.Length)
             {
-                u.RemovedStart = _selection.Cursor;
-                u.RemovedEnd = (coord.Line, _text.GetCharacterColumn(coord.Line, cindex + 1));
+                u.RemovedStart = e.Selection.Cursor;
+                u.RemovedEnd = (coord.Line, e.Text.GetCharacterColumn(coord.Line, cindex + 1));
 
                 u.Removed += line[cindex].Char;
-                _text.RemoveInLine(coord.Line, cindex, cindex + 1);
+                e.Text.RemoveInLine(coord.Line, cindex, cindex + 1);
             }
 
-            _text.InsertCharAt(coord, c);
-            u.Added = _charLabelCache.Get(c);
+            e.Text.InsertCharAt(coord, c);
+            u.Added = CharLabelCache.Get(c);
 
-            _selection.Cursor = (coord.Line, _text.GetCharacterColumn(coord.Line, cindex + 1));
+            e.Selection.Cursor = (coord.Line, e.Text.GetCharacterColumn(coord.Line, cindex + 1));
         }
 
-        u.AddedEnd = _selection.GetActualCursorCoordinates();
-        u.After = _selection.State;
+        u.AddedEnd = e.Selection.GetActualCursorCoordinates();
+        u.After = e.Selection.State;
 
-        _undo.AddUndo(u);
+        e.UndoStack.AddUndo(u);
 
-        _color.InvalidateColor(coord.Line - 1, 3);
-        _text.PendingScrollRequest = coord.Line;
+        e.Color.InvalidateColor(coord.Line - 1, 3);
+        e.Text.PendingScrollRequest = coord.Line;
     }
 
-    /// <summary>Indents or unindents the selected lines based on the current tab size.</summary>
-    public void IndentSelection(bool shift)
+    static (Coordinates, Coordinates) GetIndentRange(TextEditor e)
     {
-        Util.Assert(!_options.IsReadOnly);
-
-        UndoRecord u = new() { Before = _selection.State };
-
-        var start = _selection.Start;
-        var end = _selection.End;
-        var originalEnd = end;
+        var start = e.Selection.Start;
+        var end = e.Selection.End;
 
         if (start > end)
             (start, end) = (end, start);
 
         start.Column = 0;
-        // end._column = end._line < _text.LineCount ? _state._lines[end._line].Count : 0;
+        // end._column = end._line < e.Text.LineCount ? _state._lines[end._line].Count : 0;
         if (end is { Column: 0, Line: > 0 })
             --end.Line;
 
-        if (end.Line >= _text.LineCount)
-            end.Line = _text.LineCount == 0 ? 0 : _text.LineCount - 1;
+        if (end.Line >= e.Text.LineCount)
+            end.Line = e.Text.LineCount == 0 ? 0 : e.Text.LineCount - 1;
 
-        end.Column = _text.GetLineMaxColumn(end.Line);
+        end.Column = e.Text.GetLineMaxColumn(end.Line);
 
         //if (end._column >= GetLineMaxColumn(end._line))
         //    end._column = GetLineMaxColumn(end._line) - 1;
 
-        u.RemovedStart = start;
-        u.RemovedEnd = end;
-        u.Removed = _text.GetText(start, end);
+        return (start, end);
+    }
 
-        bool modified = false;
+    /// <summary>Indents or unindents the selected lines based on the current tab size.</summary>
+    public static void IndentSelection(TextEditor e, bool shift)
+    {
+        Util.Assert(!e.Options.IsReadOnly);
+
+        var u = new MetaOperation { Before = e.Selection.State };
+        var originalEnd = e.Selection.End;
+        var (start, end) = GetIndentRange(e);
 
         for (int i = start.Line; i <= end.Line; i++)
         {
-            var line = _text.GetLine(i);
             if (shift)
             {
-                if (line.Length == 0)
-                    continue;
-
-                if (line[0].Char == '\t')
-                {
-                    _text.RemoveInLine(i, 0, 1);
-                    modified = true;
-                }
-                else
-                {
-                    for (
-                        int j = 0;
-                        j < _text.TabSize && line.Length != 0 && line[0].Char == ' ';
-                        j++
-                    )
-                    {
-                        _text.RemoveInLine(i, 0, 1);
-                        modified = true;
-                    }
-                }
+                UnindentLine(e, i, u);
             }
             else
             {
-                _text.InsertTextAt((i, 0), "\t");
-                modified = true;
+                var indentString = e.Options.IndentWithSpaces
+                    ? new string(' ', e.Options.TabSize)
+                    : "\t";
+
+                u.Add(
+                    new ModifyLineOperation
+                    {
+                        Line = i,
+                        AddedColumn = 0,
+                        Added = indentString,
+                    }
+                );
             }
         }
 
-        if (!modified)
+        if (u.Count == 0)
             return;
 
-        start = (start.Line, _text.GetCharacterColumn(start.Line, 0));
-        Coordinates rangeEnd;
-        if (originalEnd.Column != 0)
+        e.Selection.Start = (start.Line, e.Text.GetCharacterColumn(start.Line, 0));
+        e.Selection.End =
+            originalEnd.Column != 0
+                ? (end.Line, e.Text.GetLineMaxColumn(end.Line))
+                : (originalEnd.Line, 0);
+
+        e.Text.PendingScrollRequest = e.Selection.End.Line;
+
+        u.After = e.Selection.State;
+        e.UndoStack.Do(u, e);
+    }
+
+    static void UnindentLine(TextEditor e, int i, MetaOperation u)
+    {
+        ReadOnlySpan<Glyph> line = e.Text.GetLine(i);
+        if (line.Length == 0)
+            return;
+
+        string removed;
+        if (line[0].Char == '\t')
         {
-            end = (end.Line, _text.GetLineMaxColumn(end.Line));
-            rangeEnd = end;
-            u.Added = _text.GetText(start, end);
+            removed = e.Text.GetText((i, 0), (i, 1));
         }
         else
         {
-            end = (originalEnd.Line, 0);
-            rangeEnd = (end.Line - 1, _text.GetLineMaxColumn(end.Line - 1));
-            u.Added = _text.GetText(start, rangeEnd);
+            int j = 0;
+            for (; j < e.Options.TabSize && line.Length != 0 && line[0].Char == ' '; j++) { }
+
+            if (j == 0)
+                return;
+
+            removed = new string(' ', j);
         }
 
-        _selection.Start = start;
-        _selection.End = end;
-
-        u.AddedStart = start;
-        u.AddedEnd = rangeEnd;
-        u.After = _selection.State;
-
-        _undo.AddUndo(u);
-
-        _text.PendingScrollRequest = end.Line;
+        u.Add(
+            new ModifyLineOperation
+            {
+                Line = i,
+                RemovedColumn = 0,
+                Removed = removed,
+            }
+        );
     }
 
     /// <summary>Deletes the character before the cursor position or the selected text if any exists.</summary>
-    public void Backspace()
+    public static void Backspace(TextEditor e)
     {
-        Util.Assert(!_options.IsReadOnly);
+        Util.Assert(!e.Options.IsReadOnly);
 
-        if (_text.LineCount == 0)
+        if (e.Text.LineCount == 0)
             return;
 
-        if (_selection.HasSelection)
+        if (e.Selection.HasSelection)
         {
-            var undo = DeleteSelection();
-            _undo.AddUndo(undo);
+            UndoRecord undo = DeleteSelection(e);
+            e.UndoStack.AddUndo(undo);
             return;
         }
 
-        UndoRecord u = new() { Before = _selection.State };
-        var pos = _selection.GetActualCursorCoordinates();
-        _selection.Cursor = pos;
+        UndoRecord u = new() { Before = e.Selection.State };
+        var pos = e.Selection.GetActualCursorCoordinates();
+        e.Selection.Cursor = pos;
 
-        if (_selection.Cursor.Column == 0)
+        if (e.Selection.Cursor.Column == 0)
         {
-            if (_selection.Cursor.Line == 0)
+            if (e.Selection.Cursor.Line == 0)
                 return;
 
             u.Removed = "\n";
-            u.RemovedStart = u.RemovedEnd = (pos.Line - 1, _text.GetLineMaxColumn(pos.Line - 1));
-            _text.Advance(u.RemovedEnd);
+            u.RemovedStart = u.RemovedEnd = (pos.Line - 1, e.Text.GetLineMaxColumn(pos.Line - 1));
+            e.Text.Advance(u.RemovedEnd);
 
-            int lineNum = _selection.Cursor.Line;
-            var lineText = _text.GetLineText(lineNum);
-            var prevSize = _text.GetLineMaxColumn(lineNum - 1);
-            _text.InsertTextAt((lineNum, prevSize), lineText);
-            _text.RemoveLine(_selection.Cursor.Line);
-            _selection.Cursor = (_selection.Cursor.Line - 1, prevSize);
+            int lineNum = e.Selection.Cursor.Line;
+            var lineText = e.Text.GetLineText(lineNum);
+            var prevSize = e.Text.GetLineMaxColumn(lineNum - 1);
+            e.Text.InsertTextAt((lineNum, prevSize), lineText);
+            e.Text.RemoveLine(e.Selection.Cursor.Line);
+            e.Selection.Cursor = (e.Selection.Cursor.Line - 1, prevSize);
         }
         else
         {
-            var cindex = _text.GetCharacterIndex(pos) - 1;
-            u.RemovedStart = u.RemovedEnd = _selection.GetActualCursorCoordinates();
+            var cindex = e.Text.GetCharacterIndex(pos) - 1;
+            u.RemovedStart = u.RemovedEnd = e.Selection.GetActualCursorCoordinates();
             --u.RemovedStart.Column;
 
-            _selection.Cursor = (_selection.Cursor.Line, _selection.Cursor.Column - 1);
-            u.Removed = _text.RemoveInLine(_selection.Cursor.Line, cindex, cindex + 1);
+            e.Selection.Cursor = (e.Selection.Cursor.Line, e.Selection.Cursor.Column - 1);
+            u.Removed = e.Text.RemoveInLine(e.Selection.Cursor.Line, cindex, cindex + 1);
         }
 
-        _text.PendingScrollRequest = _selection.Cursor.Line;
-        _color.InvalidateColor(_selection.Cursor.Line, 1);
+        e.Text.PendingScrollRequest = e.Selection.Cursor.Line;
+        e.Color.InvalidateColor(e.Selection.Cursor.Line, 1);
 
-        u.After = _selection.State;
-        _undo.AddUndo(u);
+        u.After = e.Selection.State;
+        e.UndoStack.AddUndo(u);
     }
 
-    void InsertTextAtCursor(string value)
+    static void InsertTextAtCursor(TextEditor e, string value)
     {
         if (string.IsNullOrEmpty(value))
             return;
 
-        var pos = _selection.GetActualCursorCoordinates();
-        var start = pos < _selection.Start ? pos : _selection.Start;
+        var pos = e.Selection.GetActualCursorCoordinates();
+        var start = pos < e.Selection.Start ? pos : e.Selection.Start;
         int totalLines = pos.Line - start.Line;
 
-        totalLines += _text.InsertTextAt(pos, value);
+        totalLines += e.Text.InsertTextAt(pos, value);
 
-        _selection.Select(pos, pos);
-        _selection.Cursor = pos;
-        _color.InvalidateColor(start.Line - 1, totalLines + 2);
+        e.Selection.Select(pos, pos);
+        e.Selection.Cursor = pos;
+        e.Color.InvalidateColor(start.Line - 1, totalLines + 2);
     }
 
-    UndoRecord DeleteSelection()
+    static UndoRecord DeleteSelection(TextEditor e)
     {
-        Util.Assert(_selection.End >= _selection.Start);
+        Util.Assert(e.Selection.End >= e.Selection.Start);
 
         UndoRecord undo = new()
         {
-            Before = _selection.State,
-            Removed = _selection.GetSelectedText(),
-            RemovedStart = _selection.Start,
-            RemovedEnd = _selection.End,
+            Before = e.Selection.State,
+            Removed = e.Selection.GetSelectedText(),
+            RemovedStart = e.Selection.Start,
+            RemovedEnd = e.Selection.End,
         };
 
-        if (_selection.End != _selection.Start)
+        if (e.Selection.End != e.Selection.Start)
         {
-            _text.DeleteRange(_selection.Start, _selection.End);
+            e.Text.DeleteRange(e.Selection.Start, e.Selection.End);
 
-            _selection.Select(_selection.Start, _selection.Start);
-            _selection.Cursor = _selection.Start;
-            _color.InvalidateColor(_selection.Start.Line, 1);
+            e.Selection.Select(e.Selection.Start, e.Selection.Start);
+            e.Selection.Cursor = e.Selection.Start;
+            e.Color.InvalidateColor(e.Selection.Start.Line, 1);
         }
 
-        undo.After = _selection.State;
+        undo.After = e.Selection.State;
         return undo;
     }
 }

@@ -10,12 +10,11 @@ internal class TextEditorText
 {
     readonly TextEditorOptions _options;
     readonly List<Line> _lines = new();
-    int _tabSize = 4;
 
     internal TextEditorText(TextEditorOptions options)
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));
-        _lines.Add(new());
+        _lines.Add(new Line());
     }
 
     internal int LineCount => _lines.Count;
@@ -36,49 +35,42 @@ internal class TextEditorText
 
     internal string GetLineText(int index)
     {
-        var line = _lines[index].Glyphs;
-        var sb = new StringBuilder(line.Count);
-        foreach (var glyph in line)
-            sb.Append(glyph.Char);
+        var line = _lines[index];
+        var sb = new StringBuilder(line.Length);
+        line.GetString(sb);
         return sb.ToString();
-    }
-
-    internal int TabSize
-    {
-        get => _tabSize;
-        set => _tabSize = Math.Max(0, Math.Min(32, value));
     }
 
     internal static bool IsBlank(char c) => c is ' ' or '\t';
 
     internal string GetText(Coordinates startPos, Coordinates endPos)
     {
-        var lstart = startPos.Line;
-        var lend = endPos.Line;
-        var istart = GetCharacterIndex(startPos);
-        var iend = GetCharacterIndex(endPos);
-        int s = 0;
+        var lineNum = startPos.Line;
+        var maxLineNum = endPos.Line;
+        var index = GetCharacterIndex(startPos);
+        var maxIndex = GetCharacterIndex(endPos);
 
-        for (int i = lstart; i < lend; i++)
-            s += _lines[i].Glyphs.Count;
+        int bufferSize = 0;
+        for (int i = lineNum; i < maxLineNum; i++)
+            bufferSize += _lines[i].Length;
 
-        var result = new StringBuilder(s + s / 8);
-        while (istart < iend || lstart < lend)
+        var result = new StringBuilder(bufferSize + bufferSize / 8);
+        while (index < maxIndex || lineNum < maxLineNum)
         {
-            if (lstart >= _lines.Count)
+            if (lineNum >= _lines.Count)
                 break;
 
-            var line = _lines[lstart].Glyphs;
-            if (istart < line.Count)
+            var line = _lines[lineNum].Glyphs;
+            if (index < line.Count)
             {
-                result.Append(line[istart].Char);
-                istart++;
+                result.Append(line[index].Char);
+                index++;
             }
             else
             {
-                istart = 0;
-                ++lstart;
-                if (lstart < _lines.Count)
+                index = 0;
+                ++lineNum;
+                if (lineNum < _lines.Count)
                     result.Append(Environment.NewLine);
             }
         }
@@ -89,7 +81,7 @@ internal class TextEditorText
     internal void SetText(string value)
     {
         _lines.Clear();
-        _lines.Add(new());
+        _lines.Add(new Line());
 
         foreach (var chr in value)
         {
@@ -99,11 +91,11 @@ internal class TextEditorText
             }
             else if (chr == '\n')
             {
-                _lines.Add(new());
+                _lines.Add(new Line());
             }
             else
             {
-                _lines[^1].Glyphs.Add(new(chr, PaletteIndex.Default));
+                _lines[^1].Glyphs.Add(new Glyph(chr, PaletteIndex.Default));
             }
         }
 
@@ -136,16 +128,16 @@ internal class TextEditorText
 
             if (value.Count == 0)
             {
-                _lines.Add(new());
+                _lines.Add(new Line());
             }
             else
             {
                 _lines.Capacity = value.Count;
                 foreach (var stringLine in value)
                 {
-                    var internalLine = new Line(new(stringLine.Length));
+                    var internalLine = new Line(new List<Glyph>(stringLine.Length));
                     foreach (var c in stringLine)
-                        internalLine.Glyphs.Add(new(c, PaletteIndex.Default));
+                        internalLine.Glyphs.Add(new Glyph(c, PaletteIndex.Default));
 
                     _lines.Add(internalLine);
                 }
@@ -244,9 +236,9 @@ internal class TextEditorText
 
     internal void InsertLine(int lineNumber, string text, PaletteIndex color = PaletteIndex.Default)
     {
-        var line = new Line(new(text.Length));
+        var line = new Line(new List<Glyph>(text.Length));
         foreach (var c in text)
-            line.Glyphs.Add(new(c, color));
+            line.Glyphs.Add(new Glyph(c, color));
         InsertLine(lineNumber, line);
     }
 
@@ -261,7 +253,7 @@ internal class TextEditorText
     {
         var line = _lines[lineNum];
         foreach (var c in text)
-            line.Glyphs.Add(new(c, color));
+            line.Glyphs.Add(new Glyph(c, color));
     }
 
     internal void InsertCharAt(Coordinates pos, char c)
@@ -361,71 +353,18 @@ internal class TextEditorText
         return sb.ToString();
     }
 
-    internal int GetCharacterIndex(Coordinates position)
-    {
-        if (position.Line >= _lines.Count)
-            return -1;
+    internal int GetCharacterIndex(Coordinates position) =>
+        position.Line >= _lines.Count
+            ? -1
+            : _lines[position.Line].GetCharacterIndex(position, _options);
 
-        var line = _lines[position.Line].Glyphs;
-        int c = 0;
-        int i = 0;
+    internal int GetCharacterColumn(int lineNumber, int indexInLine) =>
+        lineNumber >= _lines.Count
+            ? 0
+            : _lines[lineNumber].GetCharacterColumn(indexInLine, _options);
 
-        for (; i < line.Count && c < position.Column; )
-        {
-            if (line[i].Char == '\t')
-                c = c / _tabSize * _tabSize + _tabSize;
-            else
-                c++;
-            i++;
-        }
-
-        return i;
-    }
-
-    internal int GetCharacterColumn(int lineNumber, int columnNumber)
-    {
-        if (lineNumber >= _lines.Count)
-            return 0;
-
-        var line = _lines[lineNumber].Glyphs;
-        int col = 0;
-        int i = 0;
-
-        while (i < columnNumber && i < line.Count)
-        {
-            var c = line[i].Char;
-            i++;
-
-            if (c == '\t')
-                col = col / _tabSize * _tabSize + _tabSize;
-            else
-                col++;
-        }
-
-        return col;
-    }
-
-    internal int GetLineMaxColumn(int lineNumber)
-    {
-        if (lineNumber >= _lines.Count)
-            return 0;
-
-        var line = _lines[lineNumber].Glyphs;
-        int col = 0;
-
-        for (int i = 0; i < line.Count; )
-        {
-            var c = line[i].Char;
-            if (c == '\t')
-                col = col / _tabSize * _tabSize + _tabSize;
-            else
-                col++;
-
-            i++;
-        }
-
-        return col;
-    }
+    internal int GetLineMaxColumn(int lineNumber) =>
+        lineNumber >= _lines.Count ? 0 : _lines[lineNumber].GetLineMaxColumn(_options);
 
     internal bool IsOnWordBoundary(Coordinates position)
     {
@@ -617,12 +556,12 @@ internal class TextEditorText
 
             if (c == '\n')
             {
-                line = new();
+                line = new Line();
                 InsertLine(LineCount, line);
             }
             else
             {
-                line.Glyphs.Add(new(c, color));
+                line.Glyphs.Add(new Glyph(c, color));
             }
         }
     }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using ImGuiColorTextEditNet.Editor;
 using ImGuiNET;
 
 namespace ImGuiColorTextEditNet.Input;
@@ -17,11 +18,11 @@ public class StandardKeyboardInput : ITextEditorKeyboardInput
         _editor = editor ?? throw new ArgumentNullException(nameof(editor));
         AddReadOnlyBinding("Ctrl + Z", e => e.Undo());
         AddReadOnlyBinding("Ctrl + Y", e => e.Redo());
-        AddReadOnlyBinding("Delete", e => e.Modify.Delete());
-        AddReadOnlyBinding("Backspace", e => e.Modify.Backspace());
-        AddReadOnlyBinding("Ctrl + V", e => e.Modify.Paste());
-        AddReadOnlyBinding("Ctrl + X", e => e.Modify.Cut());
-        AddReadOnlyBinding("Enter", e => e.Modify.EnterCharacter('\n'));
+        AddReadOnlyBinding("Delete", TextEditorModify.Delete);
+        AddReadOnlyBinding("Backspace", TextEditorModify.Backspace);
+        AddReadOnlyBinding("Ctrl + V", TextEditorModify.Paste);
+        AddReadOnlyBinding("Ctrl + X", TextEditorModify.Cut);
+        AddReadOnlyBinding("Enter", e => TextEditorModify.EnterCharacter(e, '\n'));
         AddReadOnlyBinding("Tab", e => Indent(false, e));
         AddReadOnlyBinding("Shift + Tab", e => Indent(true, e));
 
@@ -32,7 +33,7 @@ public class StandardKeyboardInput : ITextEditorKeyboardInput
                 if (!ColemakMode)
                     return false;
 
-                e.Modify.Backspace();
+                TextEditorModify.Backspace(e);
                 return true;
             }
         );
@@ -72,7 +73,7 @@ public class StandardKeyboardInput : ITextEditorKeyboardInput
         AddMutatingBinding("Ctrl + End", e => e.Movement.MoveToEndOfFile());
         AddMutatingBinding("Ctrl + Shift + End", e => e.Movement.MoveToEndOfFile(true));
         AddMutatingBinding("Insert", e => e.Options.IsOverwrite = !e.Options.IsOverwrite);
-        AddMutatingBinding("Ctrl + C", e => e.Modify.Copy());
+        AddMutatingBinding("Ctrl + C", TextEditorModify.Copy);
         AddMutatingBinding("Ctrl + A", e => e.Selection.SelectAll());
 
         return;
@@ -80,9 +81,9 @@ public class StandardKeyboardInput : ITextEditorKeyboardInput
         void Indent(bool shifted, TextEditor e)
         {
             if (e.Selection.HasSelection && e.Selection.Start.Line != e.Selection.End.Line)
-                e.Modify.IndentSelection(shifted);
+                TextEditorModify.IndentSelection(e, shifted);
             else
-                e.Modify.EnterCharacter('\t');
+                TextEditorModify.EnterCharacter(e, '\t');
         }
     }
 
@@ -170,7 +171,7 @@ public class StandardKeyboardInput : ITextEditorKeyboardInput
             {
                 var c = io.InputQueueCharacters[i];
                 if (c != 0 && c is '\n' or >= 32)
-                    _editor.Modify.EnterCharacter((char)c);
+                    TextEditorModify.EnterCharacter(_editor, (char)c);
             }
         }
     }

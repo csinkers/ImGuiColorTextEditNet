@@ -425,8 +425,8 @@ public class TextEditorRenderer
                         if (c == '\t')
                         {
                             var x =
-                                (1.0f + MathF.Floor((1.0f + cx) / (_text.TabSize * spaceWidth)))
-                                * (_text.TabSize * spaceWidth);
+                                (1.0f + MathF.Floor((1.0f + cx) / (_options.TabSize * spaceWidth)))
+                                * (_options.TabSize * spaceWidth);
                             width = x - cx;
                         }
                         else
@@ -477,8 +477,8 @@ public class TextEditorRenderer
             {
                 var oldX = bufferOffset.X;
                 bufferOffset.X =
-                    (1.0f + MathF.Floor((1.0f + bufferOffset.X) / (_text.TabSize * spaceWidth)))
-                    * (_text.TabSize * spaceWidth);
+                    (1.0f + MathF.Floor((1.0f + bufferOffset.X) / (_options.TabSize * spaceWidth)))
+                    * (_options.TabSize * spaceWidth);
                 ++i;
 
                 if (IsShowingWhitespace)
@@ -576,8 +576,8 @@ public class TextEditorRenderer
             var c = glyph.Char;
             distance =
                 c == '\t'
-                    ? (1.0f + MathF.Floor((1.0f + distance) / (_text.TabSize * spaceSize)))
-                        * (_text.TabSize * spaceSize)
+                    ? (1.0f + MathF.Floor((1.0f + distance) / (_options.TabSize * spaceSize)))
+                        * (_options.TabSize * spaceSize)
                     : distance + _charWidthCache.Get(c);
 
             i++;
@@ -637,8 +637,8 @@ public class TextEditorRenderer
                     float spaceSize = _charWidthCache.Get(' ');
                     float oldX = columnX;
                     float newColumnX =
-                        (1.0f + MathF.Floor((1.0f + columnX) / (_text.TabSize * spaceSize)))
-                        * (_text.TabSize * spaceSize);
+                        (1.0f + MathF.Floor((1.0f + columnX) / (_options.TabSize * spaceSize)))
+                        * (_options.TabSize * spaceSize);
 
                     columnWidth = newColumnX - oldX;
 
@@ -646,7 +646,7 @@ public class TextEditorRenderer
                         break;
 
                     columnX = newColumnX;
-                    columnCoord = columnCoord / _text.TabSize * _text.TabSize + _text.TabSize;
+                    columnCoord = _options.NextTab(columnCoord);
                     columnIndex++;
                 }
                 else
