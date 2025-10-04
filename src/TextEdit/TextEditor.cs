@@ -129,8 +129,16 @@ public class TextEditor
         }
     }
 
-    /// <summary>Renders the text editor with the specified title and size.</summary>
-    public void Render(string title, Vector2 size = new()) => Renderer.Render(title, size);
+    /// <summary>Renders the text editor with the specified title and size. Returns true if the text has changed.</summary>
+    public bool Render(string title, Vector2 size = new())
+    {
+        long initialVersion = Text.Version;
+        Renderer.Render(title, size);
+        return initialVersion != Text.Version;
+    }
+
+    /// <summary>The version of the text content, for detecting changes.</summary>
+    public long Version => Text.Version;
 
     /// <summary>Undoes the last action in the text editor, allowing for reverting changes made to the text.</summary>
     public void Undo() => UndoStack.Undo(this);

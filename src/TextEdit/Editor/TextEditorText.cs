@@ -11,6 +11,8 @@ internal class TextEditorText
     readonly TextEditorOptions _options;
     readonly List<Line> _lines = new();
 
+    internal long Version { get; private set; }
+
     internal TextEditorText(TextEditorOptions options)
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));
@@ -30,6 +32,7 @@ internal class TextEditorText
     internal ReadOnlySpan<Glyph> GetLine(int index) =>
         CollectionsMarshal.AsSpan(_lines[index].Glyphs);
 
+    /// <summary>This should currently only be used for syntax highlighting, so we don't need to update Version.</summary>
     internal Span<Glyph> GetMutableLine(int index) =>
         CollectionsMarshal.AsSpan(_lines[index].Glyphs);
 
@@ -99,6 +102,7 @@ internal class TextEditorText
             }
         }
 
+        Version++;
         AllTextReplaced?.Invoke();
     }
 
@@ -143,6 +147,7 @@ internal class TextEditorText
                 }
             }
 
+            Version++;
             AllTextReplaced?.Invoke();
         }
     }
@@ -183,6 +188,8 @@ internal class TextEditorText
             if (startPos.Line < endPos.Line)
                 RemoveLine(startPos.Line + 1, endPos.Line + 1);
         }
+
+        Version++;
     }
 
     void RemoveLine(int start, int end)
@@ -202,26 +209,23 @@ internal class TextEditorText
         Util.Assert(_lines.Count > 1);
 
         _lines.RemoveAt(lineNumber);
+        Version++;
         LinesRemoved?.Invoke(lineNumber, lineNumber);
         Util.Assert(_lines.Count != 0);
     }
 
-    internal string RemoveInLine(int lineNum, int start, int end) // Removes range from [start..end), i.e. character at end index is not removed
+    internal void RemoveInLine(int lineNum, int start, int end) // Removes range from [start..end), i.e. character at end index is not removed
     {
         if (end < start)
-            return "";
+            return;
 
-        var sb = new StringBuilder();
         var line = _lines[lineNum];
 
         if (end > line.Glyphs.Count)
             end = line.Glyphs.Count;
 
-        for (int i = start; i < end; i++)
-            sb.Append(line.Glyphs[i].Char);
-
+        Version++;
         line.Glyphs.RemoveRange(start, end - start);
-        return sb.ToString();
     }
 
     List<Glyph> InsertLine(int lineNumber)
@@ -230,6 +234,7 @@ internal class TextEditorText
 
         var result = new Line();
         _lines.Insert(lineNumber, result);
+        Version++;
         LineAdded?.Invoke(lineNumber);
         return result.Glyphs;
     }
@@ -239,6 +244,8 @@ internal class TextEditorText
         var line = new Line(new List<Glyph>(text.Length));
         foreach (var c in text)
             line.Glyphs.Add(new Glyph(c, color));
+
+        Version++;
         InsertLine(lineNumber, line);
     }
 
@@ -246,6 +253,7 @@ internal class TextEditorText
     {
         Util.Assert(!_options.IsReadOnly);
         _lines.Insert(lineNumber, line);
+        Version++;
         LineAdded?.Invoke(lineNumber);
     }
 
@@ -254,6 +262,8 @@ internal class TextEditorText
         var line = _lines[lineNum];
         foreach (var c in text)
             line.Glyphs.Add(new Glyph(c, color));
+
+        Version++;
     }
 
     internal void InsertCharAt(Coordinates pos, char c)
@@ -289,6 +299,8 @@ internal class TextEditorText
             line.Insert(cindex, glyph);
             pos.Column++;
         }
+
+        Version++;
     }
 
     internal int InsertTextAt(Coordinates pos, string value)
@@ -334,6 +346,7 @@ internal class TextEditorText
             }
         }
 
+        Version++;
         return totalLines;
     }
 
@@ -545,7 +558,7 @@ internal class TextEditorText
         return at;
     }
 
-    public void Append(ReadOnlySpan<char> text, PaletteIndex color)
+    internal void Append(ReadOnlySpan<char> text, PaletteIndex color)
     {
         var line = _lines[^1];
 
@@ -564,5 +577,7 @@ internal class TextEditorText
                 line.Glyphs.Add(new Glyph(c, color));
             }
         }
+
+        Version++;
     }
 }

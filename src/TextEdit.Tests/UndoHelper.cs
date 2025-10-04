@@ -13,18 +13,24 @@ internal static class UndoHelper
     {
         var initialState = editor.SerializeState();
         var initialUndo = editor.UndoStack.SerializeState();
+        long v = editor.Version;
 
         func(editor);
         var afterState = editor.SerializeState();
         var afterUndo = editor.UndoStack.SerializeState();
 
         Assert.AreNotEqual(initialUndo, afterUndo); // Verify that an undo record is created.
+        Assert.AreNotEqual(v, editor.Version);
+        v = editor.Version;
 
         editor.Undo();
         var undoState = editor.SerializeState();
+        Assert.AreNotEqual(v, editor.Version);
+        v = editor.Version;
 
         editor.Redo();
         var redoState = editor.SerializeState();
+        Assert.AreNotEqual(v, editor.Version);
 
         Assert.AreEqual(initialState, undoState);
         Assert.AreEqual(afterState, redoState);
