@@ -54,8 +54,6 @@ public static class TextEditorModify
     /// <summary>Pastes text from the clipboard into the editor at the current cursor position or replaces the selection if any exists.</summary>
     public static void Paste(TextEditor e)
     {
-        Util.Assert(!e.Options.IsReadOnly);
-
         unsafe
         {
             if (ImGuiNative.igGetClipboardText() == null)
@@ -66,16 +64,35 @@ public static class TextEditorModify
         if (string.IsNullOrEmpty(clipText))
             return;
 
+        ReplaceSelection(e, clipText);
+    }
+
+    /// <summary>Replaces the currently selected text with the specified text, or inserts the text at the cursor position if no selection exists.</summary>
+    public static void ReplaceSelection(TextEditor e, string text)
+    {
+        Util.Assert(!e.Options.IsReadOnly);
+
         UndoRecord u = e.Selection.HasSelection
             ? DeleteSelection(e)
             : new() { Before = e.Selection.State };
 
-        u.Added = clipText;
-        u.AddedStart = e.Selection.GetActualCursorCoordinates();
+        var pos = e.Selection.GetActualCursorCoordinates();
+        u.Added = text;
+        u.AddedStart = pos;
+        u.AddedEnd = pos;
 
-        InsertTextAtCursor(e, clipText);
+        if (!string.IsNullOrEmpty(text))
+        {
+            var start = pos < e.Selection.Start ? pos : e.Selection.Start;
+            int totalLines = pos.Line - start.Line;
 
-        u.AddedEnd = e.Selection.GetActualCursorCoordinates();
+            u.AddedEnd = e.Text.InsertTextAt(pos, text);
+
+            e.Selection.Select(pos, pos);
+            e.Selection.Cursor = pos;
+            e.Color.InvalidateColor(start.Line - 1, totalLines + 2);
+        }
+
         u.After = e.Selection.State;
         e.UndoStack.AddUndo(u);
     }
@@ -368,22 +385,6 @@ public static class TextEditorModify
 
         e.Text.PendingScrollRequest = e.Selection.Cursor.Line;
         e.UndoStack.AddUndo(u);
-    }
-
-    static void InsertTextAtCursor(TextEditor e, string value)
-    {
-        if (string.IsNullOrEmpty(value))
-            return;
-
-        var pos = e.Selection.GetActualCursorCoordinates();
-        var start = pos < e.Selection.Start ? pos : e.Selection.Start;
-        int totalLines = pos.Line - start.Line;
-
-        totalLines += e.Text.InsertTextAt(pos, value);
-
-        e.Selection.Select(pos, pos);
-        e.Selection.Cursor = pos;
-        e.Color.InvalidateColor(start.Line - 1, totalLines + 2);
     }
 
     static UndoRecord DeleteSelection(TextEditor e)

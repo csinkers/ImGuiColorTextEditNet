@@ -133,4 +133,71 @@ for (a = 0; a < 10; a++) // 3
         Assert.AreEqual(2, t.UndoCount);
         Assert.AreEqual(2, t.UndoIndex);
     }
+
+    [TestMethod]
+    public void ReplaceSelectionTest1()
+    {
+        // "a" -> "b" (replace all text)
+        var t = new TextEditor { AllText = "a" };
+        t.Selection.Select((0, 0), (0, 1));
+        UndoHelper.TestUndo(t, x => TextEditorModify.ReplaceSelection(x, "b"));
+        Assert.AreEqual("b", t.AllText);
+        Assert.AreEqual(1, t.UndoCount);
+        Assert.AreEqual(1, t.UndoIndex);
+    }
+
+    [TestMethod]
+    public void ReplaceSelectionTest2()
+    {
+        // "a" -> "ab" (insert at end)
+        var t = new TextEditor { AllText = "a" };
+        t.Selection.Cursor = (0, 1);
+        UndoHelper.TestUndo(t, x => TextEditorModify.ReplaceSelection(x, "b"));
+        Assert.AreEqual("ab", t.AllText);
+        Assert.AreEqual(1, t.UndoCount);
+        Assert.AreEqual(1, t.UndoIndex);
+    }
+
+    [TestMethod]
+    public void ReplaceSelectionTest3()
+    {
+        // "a" -> "ba" (insert at start)
+        var t = new TextEditor { AllText = "a" };
+        t.Selection.Cursor = (0, 0);
+        UndoHelper.TestUndo(t, x => TextEditorModify.ReplaceSelection(x, "b"));
+        Assert.AreEqual("ba", t.AllText);
+        Assert.AreEqual(1, t.UndoCount);
+        Assert.AreEqual(1, t.UndoIndex);
+    }
+
+    [TestMethod]
+    public void ReplaceSelectionTest4()
+    {
+        // "ac" -> "abc" (insert in middle)
+        var t = new TextEditor { AllText = "ac" };
+        t.Selection.Cursor = (0, 1);
+        UndoHelper.TestUndo(t, x => TextEditorModify.ReplaceSelection(x, "b"));
+        Assert.AreEqual("abc", t.AllText);
+        Assert.AreEqual(1, t.UndoCount);
+        Assert.AreEqual(1, t.UndoIndex);
+    }
+
+    [TestMethod]
+    public void ReplaceSelectionTest5()
+    {
+        // "abc\ndef" -> "abxyzef" (multi-line replace with partial lines)
+        //    |||| sel
+        var before =
+            @"abc
+def";
+
+        var after = "abxyzef";
+
+        var t = new TextEditor { AllText = before };
+        t.Selection.Select((0, 2), (1, 1));
+        UndoHelper.TestUndo(t, x => TextEditorModify.ReplaceSelection(x, "xyz"));
+        Assert.AreEqual(after, t.AllText);
+        Assert.AreEqual(1, t.UndoCount);
+        Assert.AreEqual(1, t.UndoIndex);
+    }
 }

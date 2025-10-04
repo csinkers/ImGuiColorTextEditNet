@@ -303,12 +303,11 @@ internal class TextEditorText
         Version++;
     }
 
-    internal int InsertTextAt(Coordinates pos, string value)
+    internal Coordinates InsertTextAt(Coordinates pos, string value)
     {
         Util.Assert(!_options.IsReadOnly);
 
         int cindex = GetCharacterIndex(pos);
-        int totalLines = 0;
         foreach (var c in value)
         {
             Util.Assert(_lines.Count != 0);
@@ -333,7 +332,6 @@ internal class TextEditorText
                 pos.Line++;
                 pos.Column = 0;
                 cindex = 0;
-                totalLines++;
             }
             else
             {
@@ -347,7 +345,7 @@ internal class TextEditorText
         }
 
         Version++;
-        return totalLines;
+        return pos;
     }
 
     internal string GetWordAt(Coordinates position)
