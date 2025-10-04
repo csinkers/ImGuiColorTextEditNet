@@ -70,6 +70,14 @@ public struct Coordinates : IEquatable<Coordinates>
     public static bool operator >=(Coordinates x, Coordinates y) =>
         x.Line != y.Line ? x.Line > y.Line : x.Column >= y.Column;
 
+    /// <summary>Adds two coordinates</summary>
+    public static Coordinates operator +(Coordinates x, Coordinates y) =>
+        new(x.Line + y.Line, x.Column + y.Column);
+
+    /// <summary>Subtracts two coordinates</summary>
+    public static Coordinates operator -(Coordinates x, Coordinates y) =>
+        new(x.Line - y.Line, x.Column - y.Column);
+
     /// <summary>Checks if the current Coordinates instance is equal to another Coordinates instance.</summary>
     public bool Equals(Coordinates other) => Line == other.Line && Column == other.Column;
 

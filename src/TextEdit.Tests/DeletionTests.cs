@@ -44,6 +44,18 @@ public class DeletionTests
     }
 
     [TestMethod]
+    public void BackspaceTestEol()
+    {
+        var t = new TextEditor { AllText = "abc" };
+        t.CursorPosition = (0, 3);
+
+        UndoHelper.TestUndo(t, TextEditorModify.Backspace);
+        Assert.AreEqual("ab", t.AllText);
+        Assert.AreEqual(1, t.UndoCount);
+        Assert.AreEqual(1, t.UndoIndex);
+    }
+
+    [TestMethod]
     public void BackspaceTestMultiLine1() => BackspaceTestMultiLine1Inner(false, false);
 
     static void BackspaceTestMultiLine1Inner(bool breakpoints, bool errors)
@@ -100,6 +112,37 @@ three";
         Assert.AreEqual((0, 2), t.CursorPosition);
         Assert.AreEqual((0, 2), t.Selection.Start);
         Assert.AreEqual((0, 2), t.Selection.End);
+        Assert.AreEqual(1, t.UndoCount);
+        Assert.AreEqual(1, t.UndoIndex);
+    }
+
+    [TestMethod]
+    public void BackspaceTestMultiLine3() => BackspaceTestMultiLine3Inner(false, false);
+
+    static void BackspaceTestMultiLine3Inner(bool breakpoints, bool errors)
+    {
+        var before =
+            @"first
+second
+third";
+
+        var after =
+            @"firstsecond
+third";
+
+        var t = new TextEditor { AllText = before };
+        if (breakpoints)
+            t.Breakpoints.Add(0, 1);
+        if (errors)
+            t.ErrorMarkers.Add(0, 1);
+
+        t.CursorPosition = (1, 0);
+
+        UndoHelper.TestUndo(t, TextEditorModify.Backspace);
+        Assert.AreEqual(after, t.AllText);
+        Assert.AreEqual((0, 5), t.CursorPosition);
+        Assert.AreEqual((0, 5), t.Selection.Start);
+        Assert.AreEqual((0, 5), t.Selection.End);
         Assert.AreEqual(1, t.UndoCount);
         Assert.AreEqual(1, t.UndoIndex);
     }

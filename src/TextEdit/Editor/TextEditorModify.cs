@@ -321,7 +321,7 @@ public static class TextEditorModify
             return;
         }
 
-        UndoRecord u = new() { Before = e.Selection.State };
+        MetaOperation u = new() { Before = e.Selection.State };
         var pos = e.Selection.GetActualCursorCoordinates();
         e.Selection.Cursor = pos;
 
@@ -330,31 +330,43 @@ public static class TextEditorModify
             if (e.Selection.Cursor.Line == 0)
                 return;
 
-            u.Removed = "\n";
-            u.RemovedStart = u.RemovedEnd = (pos.Line - 1, e.Text.GetLineMaxColumn(pos.Line - 1));
-            e.Text.Advance(u.RemovedEnd);
-
             int lineNum = e.Selection.Cursor.Line;
             var lineText = e.Text.GetLineText(lineNum);
             var prevSize = e.Text.GetLineMaxColumn(lineNum - 1);
-            e.Text.InsertTextAt((lineNum, prevSize), lineText);
-            e.Text.RemoveLine(e.Selection.Cursor.Line);
-            e.Selection.Cursor = (e.Selection.Cursor.Line - 1, prevSize);
+
+            u.Add(
+                new ModifyLineOperation
+                {
+                    Line = lineNum - 1,
+                    Added = lineText,
+                    AddedColumn = prevSize,
+                }
+            );
+
+            u.Add(new RemoveLineOperation { Line = lineNum, Removed = lineText });
+            u.After.Cursor = (e.Selection.Cursor.Line - 1, prevSize);
         }
         else
         {
             var cindex = e.Text.GetCharacterIndex(pos) - 1;
-            u.RemovedStart = u.RemovedEnd = e.Selection.GetActualCursorCoordinates();
-            --u.RemovedStart.Column;
+            var removed = e.Text.GetText(pos - (0, 1), pos);
 
-            e.Selection.Cursor = (e.Selection.Cursor.Line, e.Selection.Cursor.Column - 1);
-            u.Removed = e.Text.RemoveInLine(e.Selection.Cursor.Line, cindex, cindex + 1);
+            u.Add(
+                new ModifyLineOperation
+                {
+                    Line = e.Selection.Cursor.Line,
+                    RemovedColumn = cindex,
+                    Removed = removed,
+                }
+            );
+
+            u.After.Cursor = (e.Selection.Cursor.Line, e.Selection.Cursor.Column - 1);
         }
 
-        e.Text.PendingScrollRequest = e.Selection.Cursor.Line;
-        e.Color.InvalidateColor(e.Selection.Cursor.Line, 1);
+        u.After.Start = u.After.End = u.After.Cursor;
+        u.Apply(e);
 
-        u.After = e.Selection.State;
+        e.Text.PendingScrollRequest = e.Selection.Cursor.Line;
         e.UndoStack.AddUndo(u);
     }
 
