@@ -84,13 +84,12 @@ public static class TextEditorModify
         if (!string.IsNullOrEmpty(text))
         {
             var start = pos < e.Selection.Start ? pos : e.Selection.Start;
-            int totalLines = pos.Line - start.Line;
 
             u.AddedEnd = e.Text.InsertTextAt(pos, text);
 
             e.Selection.Select(pos, pos);
             e.Selection.Cursor = pos;
-            e.Color.InvalidateColor(start.Line - 1, totalLines + 2);
+            e.Color.InvalidateColor(start.Line - 1, u.AddedEnd.Line - start.Line + 1);
         }
 
         u.After = e.Selection.State;
