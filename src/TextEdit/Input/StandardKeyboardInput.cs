@@ -163,7 +163,7 @@ public class StandardKeyboardInput : ITextEditorKeyboardInput
         foreach (var (binding, value) in _bindings)
             if (binding.Ctrl == ctrl && binding.Shift == shift && ImGui.IsKeyPressed(binding.Key))
                 if (value.Action(_editor, value.Context))
-                    break;
+                    return;
 
         if (!_editor.Options.IsReadOnly && io.InputQueueCharacters.Size != 0)
         {
