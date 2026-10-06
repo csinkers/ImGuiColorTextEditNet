@@ -1,6 +1,3 @@
-using System;
-using ImGuiNET;
-
 namespace ImGuiColorTextEditNet.Input;
 
 /// <summary>Represents the standard mouse input handling.</summary>

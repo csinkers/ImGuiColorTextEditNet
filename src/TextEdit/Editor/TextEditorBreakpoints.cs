@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-
 namespace ImGuiColorTextEditNet.Editor;
 
 /// <summary>Manages breakpoints, allowing for setting, checking, and removing breakpoints on specific lines.</summary>

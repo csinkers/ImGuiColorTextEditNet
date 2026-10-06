@@ -1,5 +1,3 @@
-using System;
-
 namespace ImGuiColorTextEditNet.Editor;
 
 /// <summary>Handles text selection, allowing for selecting text ranges, words, or lines.</summary>

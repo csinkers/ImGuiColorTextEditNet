@@ -1,5 +1,3 @@
-using System;
-
 namespace ImGuiColorTextEditNet;
 
 /// <summary>Event arguments for when a breakpoint is removed.</summary>

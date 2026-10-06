@@ -1,5 +1,3 @@
-using System;
-
 namespace ImGuiColorTextEditNet.Syntax;
 
 /// <summary>A syntax highlighter that does not perform any syntax highlighting.</summary>

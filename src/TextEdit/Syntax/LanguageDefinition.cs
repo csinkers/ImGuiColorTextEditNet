@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace ImGuiColorTextEditNet.Syntax;
 
 /// <summary>Represents a language definition for syntax highlighting.</summary>

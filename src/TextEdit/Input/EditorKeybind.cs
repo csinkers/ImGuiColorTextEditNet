@@ -1,6 +1,3 @@
-using System;
-using ImGuiNET;
-
 namespace ImGuiColorTextEditNet.Input;
 
 /// <summary>
@@ -38,13 +35,18 @@ public record struct EditorKeybind(bool Shift, bool Ctrl, ImGuiKey Key)
                         result = default;
                         return false;
                     }
+
                     if (p.Length == 1) // Try to parse as a single character (A-Z, 0-9)
                     {
                         char c = char.ToUpperInvariant(p[0]);
                         if (c is >= 'A' and <= 'Z')
                             key = ImGuiKey.A + (c - 'A');
                         else if (c is >= '0' and <= '9')
+#if HEXA
+                            key = ImGuiKey.Key0 + (c - '0');
+#else
                             key = ImGuiKey._0 + (c - '0');
+#endif
                     }
 
                     // Try to parse as a named key

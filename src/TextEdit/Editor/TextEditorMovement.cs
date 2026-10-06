@@ -1,5 +1,3 @@
-using System;
-
 namespace ImGuiColorTextEditNet.Editor;
 
 /// <summary>Provides methods for moving the cursor.</summary>

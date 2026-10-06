@@ -1,10 +1,7 @@
-using System;
 using System.Buffers;
-using System.Collections.Generic;
 using System.Numerics;
 using System.Text;
 using ImGuiColorTextEditNet.Input;
-using ImGuiNET;
 
 namespace ImGuiColorTextEditNet.Editor;
 
@@ -22,9 +19,15 @@ public class TextEditorRenderer
         "char widths",
         x =>
         {
+#if HEXA
+            var font = ImGui.GetFontBaked();
+            float scale = ImGui.GetFontSize() / font.Size;
+            return font.GetCharAdvance(x) * scale;
+#else
             var font = ImGui.GetFont();
             float scale = ImGui.GetFontSize() / font.FontSize;
             return font.GetCharAdvance(x) * scale;
+#endif
         }
     );
 
@@ -527,6 +530,33 @@ public class TextEditorRenderer
 
     static Vector2 DrawText(ImDrawListPtr drawList, Vector2 offset, uint color, StringBuilder sb)
     {
+#if HEXA
+        byte[]? tempArray = null;
+        int maxByteCount = Encoding.UTF8.GetMaxByteCount(sb.Length);
+        if (maxByteCount > 1024)
+            tempArray = ArrayPool<byte>.Shared.Rent(maxByteCount);
+
+        try
+        {
+            Span<byte> temp =
+                maxByteCount > 1024 ? tempArray.AsSpan(0, maxByteCount) : stackalloc byte[maxByteCount];
+
+            int written = 0;
+            foreach (var chunk in sb.GetChunks())
+            {
+                written += Encoding.UTF8.GetBytes(chunk.Span, temp[written..]);
+            }
+
+            var slice = (ReadOnlySpan<byte>)temp[..written];
+            drawList.AddText(offset, color, slice);
+            return ImGui.CalcTextSize(slice);
+        }
+        finally
+        {
+            if (tempArray != null)
+                ArrayPool<byte>.Shared.Return(tempArray);
+        }
+#else
         char[]? tempArray = null;
         if (sb.Length > 1024)
             tempArray = ArrayPool<char>.Shared.Rent(sb.Length);
@@ -552,6 +582,7 @@ public class TextEditorRenderer
             if (tempArray != null)
                 ArrayPool<char>.Shared.Return(tempArray);
         }
+#endif
     }
 
     float TextDistanceToLineStart(Coordinates position)
@@ -568,8 +599,8 @@ public class TextEditorRenderer
             if (lastColor != glyph.ColorIndex && glyph.Char != ' ')
             {
                 lastColor = glyph.ColorIndex;
-                // Each 'text block' that ImGui draws gets aligned to a 1-pixel grid
-                // so when the color changes we need to round up!
+                // Each 'text block' that ImGui draws gets aligned to a 1-pixel grid,
+                // so when the color changes, we need to round up!
                 distance = MathF.Ceiling(distance);
             }
 

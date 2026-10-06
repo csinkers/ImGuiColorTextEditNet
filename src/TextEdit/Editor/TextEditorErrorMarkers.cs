@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-
 namespace ImGuiColorTextEditNet.Editor;
 
 /// <summary>Manages error markers.</summary>

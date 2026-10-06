@@ -1,7 +1,4 @@
-using System;
-using System.Collections.Generic;
 using ImGuiColorTextEditNet.Editor;
-using ImGuiNET;
 
 namespace ImGuiColorTextEditNet.Input;
 

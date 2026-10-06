@@ -1,7 +1,5 @@
-using System;
 using System.Text;
 using ImGuiColorTextEditNet.Operations;
-using ImGuiNET;
 
 namespace ImGuiColorTextEditNet.Editor;
 
@@ -54,6 +52,17 @@ public static class TextEditorModify
     /// <summary>Pastes text from the clipboard into the editor at the current cursor position or replaces the selection if any exists.</summary>
     public static void Paste(TextEditor e)
     {
+#if HEXA
+        unsafe
+        {
+            if (ImGui.GetClipboardText() == null)
+                return;
+        }
+
+        var clipText = ImGui.GetClipboardTextS();
+        if (string.IsNullOrEmpty(clipText))
+            return;
+#else
         unsafe
         {
             if (ImGuiNative.igGetClipboardText() == null)
@@ -63,6 +72,7 @@ public static class TextEditorModify
         var clipText = ImGui.GetClipboardText();
         if (string.IsNullOrEmpty(clipText))
             return;
+#endif
 
         ReplaceSelection(e, clipText);
     }

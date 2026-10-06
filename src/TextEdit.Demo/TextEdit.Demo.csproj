@@ -17,7 +17,7 @@
   <ItemGroup>
     <ProjectReference Include="..\TextEdit\ImGuiColorTextEditNet.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="!Exists('..\..\deps\veldrid\')">
+  <ItemGroup>
     <PackageReference Include="Veldrid" Version="4.9.0" />
     <PackageReference Include="Veldrid.StartupUtilities" Version="4.9.0" />
   </ItemGroup>
@@ -42,11 +42,5 @@
       Include="Shaders/Metal/imgui-frag.metallib"
       LogicalName="imgui-frag.metallib"
     />
-  </ItemGroup>
-  <ItemGroup Condition="Exists('..\..\deps\veldrid\')">
-    <ProjectReference Include="..\..\..\veldrid\src\Veldrid\Veldrid.csproj" />
-    <ProjectReference Include="..\..\..\veldrid\src\Veldrid.ImGui\Veldrid.ImGui.csproj" />
-    <ProjectReference Include="..\..\..\veldrid\src\Veldrid.SDL2\Veldrid.SDL2.csproj" />
-    <ProjectReference Include="..\..\..\veldrid\src\Veldrid.StartupUtilities\Veldrid.StartupUtilities.csproj" />
   </ItemGroup>
 </Project>

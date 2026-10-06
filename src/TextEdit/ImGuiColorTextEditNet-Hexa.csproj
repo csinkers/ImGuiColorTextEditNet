@@ -1,0 +1,52 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>12</LangVersion>
+    <Nullable>enable</Nullable>
+    <Title>ImGuiColorTextEditNet-Hexa</Title>
+    <Authors>Cam Sinclair, BalazsJako</Authors>
+    <Description>A multi-line ImGui text editor control supporting syntax highlighting</Description>
+    <Copyright>2023 Cam Sinclair</Copyright>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageId>ImGuiColorTextEditNet-Hexa</PackageId>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/csinkers/ImGuiColorTextEditNet</PackageProjectUrl>
+    <PackageTags>imgui</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <RepositoryUrl>https://github.com/csinkers/ImGuiColorTextEditNet</RepositoryUrl>
+    <RepositoryType>Git</RepositoryType>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
+    <EmbedAllSources>true</EmbedAllSources>
+    <DebugType>Embedded</DebugType>
+    <DefineConstants>HEXA</DefineConstants>
+    <ImplicitUsings>enable</ImplicitUsings> 
+  </PropertyGroup>
+  <ItemGroup>
+    <Using Include="Hexa.NET.ImGui" />
+  </ItemGroup> 
+  <ItemGroup>
+    <None Include="..\..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>TextEdit.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Hexa.NET.ImGui" Version="2.2.9" />
+    <PackageReference Include="MinVer" Version="8.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+  <Target Name="ApplyGitHubRunNumberToVersion" AfterTargets="MinVer">
+    <PropertyGroup>
+      <GITHUB_RUN_NUMBER Condition="'$(GITHUB_RUN_NUMBER)' == ''">0</GITHUB_RUN_NUMBER>
+      <FileVersion>$(MinVerMajor).$(MinVerMinor).$(MinVerPatch).$(GITHUB_RUN_NUMBER)</FileVersion>
+    </PropertyGroup>
+  </Target>
+</Project>
