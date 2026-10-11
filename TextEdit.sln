@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TextEdit.Tests", "src\TextE
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ImGuiColorTextEditNet-Hexa", "src\TextEdit\ImGuiColorTextEditNet-Hexa.csproj", "{4EBADCB0-425F-43CC-A8A3-0DD28FD1FBC1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TextEdit.HexaDemo", "src\TextEdit.HexaDemo\TextEdit.HexaDemo.csproj", "{5C1F8C8B-AD99-433E-90F4-3D72596F5621}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{4EBADCB0-425F-43CC-A8A3-0DD28FD1FBC1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4EBADCB0-425F-43CC-A8A3-0DD28FD1FBC1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4EBADCB0-425F-43CC-A8A3-0DD28FD1FBC1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5C1F8C8B-AD99-433E-90F4-3D72596F5621}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5C1F8C8B-AD99-433E-90F4-3D72596F5621}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5C1F8C8B-AD99-433E-90F4-3D72596F5621}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5C1F8C8B-AD99-433E-90F4-3D72596F5621}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

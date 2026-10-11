@@ -1,3 +1,4 @@
+using System.Numerics;
 using ImGuiColorTextEditNet.Editor;
 
 namespace ImGuiColorTextEditNet.Input;
@@ -7,7 +8,7 @@ public class StandardKeyboardInput : ITextEditorKeyboardInput
 {
     readonly TextEditor _editor;
     readonly Dictionary<EditorKeybind, (object? Context, EditorKeybindAction Action)> _bindings =
-    [];
+        [];
 
     /// <summary>Initializes a new instance of the <see cref="StandardKeyboardInput"/> class.</summary>
     public StandardKeyboardInput(TextEditor editor)
@@ -149,6 +150,25 @@ public class StandardKeyboardInput : ITextEditorKeyboardInput
     {
         if (!ImGui.IsWindowFocused())
             return;
+
+#if HEXA
+        // From https://github.com/ocornut/imgui/issues/8584
+        // Notify OS of text input position for advanced IME (-1 x offset so that Windows IME can cover our cursor. Bit of an extra nicety.)
+        // This is required for some backends (SDL3) to start emitting character/text inputs.
+        // As per #6341, make sure we don't set that on the deactivating frame.
+        if (!_editor.Options.IsReadOnly)
+        {
+            unsafe
+            {
+                ImGuiPlatformImeData* imeData = ImGui.ImGuiPlatformImeData();
+                imeData->WantVisible = 1; // true
+                imeData->WantTextInput = 1; // true
+                imeData->InputPos = ImGui.GetCursorScreenPos();
+                imeData->InputLineHeight = ImGui.GetTextLineHeightWithSpacing();
+                imeData->ViewportId = ImGui.GetWindowViewport().ID;
+            }
+        }
+#endif
 
         var io = ImGui.GetIO();
         var shift = io.KeyShift;

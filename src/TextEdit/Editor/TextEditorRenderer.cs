@@ -173,7 +173,7 @@ public class TextEditorRenderer
 
     void RenderInner()
     {
-        /* Compute _charAdvance regarding to scaled font size (Ctrl + mouse wheel)*/
+        /* Compute _charAdvance from scaled font size */
         float fontSize = _charWidthCache.Get('#');
         _charAdvance = new(fontSize, ImGui.GetTextLineHeightWithSpacing() * LineSpacing);
 
